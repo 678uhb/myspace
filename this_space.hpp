@@ -15,12 +15,7 @@
 #else
 #define this_complier_unknown
 #endif
-// cpp
-#if (this_compiler_msvc >= 1900)
-#define this_cpp_11
-#else
-#error unsupport cpp version
-#endif
+
 // system headers
 #if defined(this_platform_windows)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -36,6 +31,9 @@
 #pragma comment(lib, "ws2_32.lib")
 #elif defined(this_platform_linux)
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #else
@@ -44,6 +42,7 @@
 // c headers
 #include <cerrno>
 #include <cstdint>
+#include <cstdarg>
 #include <cstring>
 #include <cctype>
 //cpp headers
@@ -72,6 +71,34 @@ namespace this_space {
 
 	using namespace std;
 	using namespace chrono;
+
+	class scope_t {
+	public:
+		template<class f_t, class... a_t>
+		scope_t(f_t&& f, a_t&&... args) :f_(bind(forward<f_t&&>(f), forward<a_t&&>(args)...)) {}
+		~scope_t() { if (f_) f_(); }
+		void dismiss() { f_ = nullptr; }
+	private:
+		function<void()> f_ = nullptr;
+	};
+
+	template<class throw_t>
+	void throw_e(throw_t&& e) {
+		if (current_exception())
+			throw_with_nested(e);
+		else
+			throw e;
+	}
+
+	class exception_t : public runtime_error {
+	public:
+		exception_t(const char* file, int line, const string& desc)
+			:runtime_error([&](...) {
+			stringstream ss;
+			ss << file << ":" << line << " " << desc;
+			return move(ss.str());
+		}()) {}
+	};
 
 #define __annoymous_t(type,token,line)	type token##line
 #define _annoymous_t(type,line)  __annoymous_t(type,annoymous,line)
@@ -129,25 +156,7 @@ namespace this_space {
 		return move(vformat<len>(fmt, ap));
 	}
 
-	class scope_t {
-	public:
-		template<class f_t, class... a_t>
-		scope_t(f_t&& f, a_t&&... args) :f_(bind(forward<f_t&&>(f), forward<a_t&&>(args)...)) {}
-		~scope_t() { if (f_) f_(); }
-		void dismiss() { f_ = nullptr; }
-	private:
-		function<void()> f_ = nullptr;
-	};
 
-	class exception_t : public runtime_error {
-	public:
-		exception_t(const char* file, int line, const string& desc)
-			:runtime_error([&](...) {
-			stringstream ss;
-			ss << file << ":" << line << " " << desc;
-			return move(ss.str());
-		}()) {}
-	};
 
 	class syserror_t : public system_error {
 	public:
@@ -229,12 +238,13 @@ namespace this_space {
 		return src.erase(src.find_last_not_of(token)+1 );
 	}
 
-	template<class = void>
-	string& strip(string& src, const string& token = " \r\n\t") {
+	template<class type_t = string>
+	type_t& strip(type_t& src, const string& token = " \r\n\t") {
 		return lstrip(rstrip(src, token), token);
 	}
-	template<class hold_t = hold_t<string>>
-	hold_t& strip(hold_t& src, const string& token = " \r\t\n") {
+
+	template<>
+	list<string>& strip<list<string>>(list<string>& src, const string& token) {
 		for (auto itr = src.begin(); itr != src.end(); ) {
 			if (strip(*itr).empty())
 				src.erase(itr++);
@@ -243,6 +253,17 @@ namespace this_space {
 		}
 		return src;
 	}
+	template<class = void>
+	list<string> strip(list<string>&& src, const string& token = "\r\n\t ") {
+		for (auto itr = src.begin(); itr != src.end(); ) {
+			if (strip(*itr).empty())
+				src.erase(itr++);
+			else
+				++itr;
+		}
+		return move(src);
+	}
+
 
 	template<class = void>
 	list<string> split(const string& src, const string& tokens = " \r\n\t") {
@@ -308,10 +329,7 @@ namespace this_space {
 		return move(string((char*)buf));
 #else
 		auto buf = new_unique_array<char>(1024);
-		int n = ::strerror_r(ec, buf.get(), 1024);
-		if (n > 0)
-			return move(string(buf.get(), n));
-		return "";
+		return move(string(::strerror_r(ec, buf.get(), 1024)));
 #endif
 	}
 
@@ -370,7 +388,6 @@ namespace this_space {
 			call_once(get_static().onceflag_, []() {
 				thread([]() {
 					ofstream ofs(get_static().lgodir_ + "log", ios::out|ios::app);
-					size_t index = 0;
 					while (true) {
 						try {
 							list<string> q;
@@ -449,13 +466,6 @@ namespace this_space {
 		}
 	}
 	template<class = void>
-	void throw_e(exception& e) {
-		if (current_exception())
-			throw_with_nested(e);
-		else
-			throw e;
-	}
-	template<class = void>
 	void print_exception() {
 		string buf;
 		try {
@@ -475,7 +485,7 @@ namespace this_space {
 		config_t(const string& path) {
 			string line;
 			string section = "default";
-			for (auto fs = ifstream(path); getline(fs, line); ) {
+			for (ifstream fs(path); getline(fs, line); ) {
 				if (strip(line).empty())continue;
 				if (line[0] == '[') {
 					section = line.substr(1, line.find_last_not_of(']'));
@@ -546,10 +556,14 @@ namespace this_space {
 		auto flag = ::fcntl(fd, F_GETFL, 0);
 		throw_syserror_if(flag < 0);
 
-		if (f)
-			throw_syserror_if(0 != ::fcntl(fd, F_SETFL, flag | O_NONBLOCK));
-		else
-			throw_syserror_if(0 != ::fcntl(fd, F_SETFL, flag & (~O_NONBLOCK)));
+		if (f){
+			if ( flag & O_NONBLOCK )
+				throw_syserror_if(0 != ::fcntl(fd, F_SETFL, (flag & ~O_NONBLOCK)));
+		}
+		else{
+			if(!( flag & O_NONBLOCK))
+				throw_syserror_if(0 != ::fcntl(fd, F_SETFL, flag | O_NONBLOCK));
+		}
 #endif
 	}
 
@@ -609,7 +623,9 @@ namespace this_space {
 					switch (ec) {
 					case EINTR:
 					case EAGAIN:
+#if !defined(this_platform_linux)
 					case EWOULDBLOCK:
+#endif
 #ifdef this_platform_windows
 					case WSAEWOULDBLOCK:
 #endif
@@ -641,7 +657,9 @@ namespace this_space {
 					switch (ec) {
 					case EINTR:
 					case EAGAIN:
+#if !defined(this_platform_linux)
 					case EWOULDBLOCK:
+#endif
 #ifdef this_platform_windows
 					case WSAEWOULDBLOCK:
 #endif
@@ -702,7 +720,9 @@ namespace this_space {
 				switch (ec) {
 				case EINTR:
 				case EAGAIN:
+#if !defined(this_platform_linux)
 				case EWOULDBLOCK:
+#endif
 #ifdef this_platform_windows
 				case WSAEWOULDBLOCK:
 #endif
@@ -860,7 +880,7 @@ namespace this_space {
 	class net_switch_t {
 
 	};
-#define net_switch
+#define net_switch()
 #endif
 
 	class transaction_t {
