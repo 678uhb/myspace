@@ -1,0 +1,5 @@
+x.y=10
+client.longport=8888
+client.shortport=7777
+mid.longport=9999
+mid.shortport=6666
