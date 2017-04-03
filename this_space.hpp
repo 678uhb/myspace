@@ -217,7 +217,7 @@ namespace this_space {
 	string& toupper(string& src) { for (auto& c : src) c = std::toupper(c); return src; }
 
 	template<class = void>
-	list<string> squeeze(string& src, const string& tokens) {
+	list<string> cut(string& src, const string& tokens) {
 		list<string> ret;
 		do {
 			auto pos = src.find_first_of(tokens);
@@ -637,10 +637,10 @@ namespace this_space {
 				writen += (size_t)n;
 			}
 		}
-		string read(size_t count = 0) {
+		string read(size_t count = 0, bool block = false) {
 			throw_runtimerror_if(fd_ < 0);
-			if (count == 0)
-				setblock(fd_, false);
+			if (count == 0) block = false;
+			setblock(fd_, block);
 			string ret;
 			static const size_t buflen = (10 << 10);
 			size_t recved = 0;
