@@ -7,11 +7,7 @@ void on_newlink(shared_ptr<socketstream_t> c) {
 			auto p = new_shared<pump_t>();
 			p->push(c, [c, &buf]() {
 				buf.append(move(c->read()));
-<<<<<<< HEAD:test/main.cpp
 				auto cmds = strip(cut(buf, "\n"));
-=======
-				auto cmds = strip(squeeze(buf, "\n"));
->>>>>>> e02d21c379400610d727c19d0eb0eb75e0fb3968:test/main.cpp
 				for (auto& cmd : cmds) {
 					debug("recv cmd : %s", cmd.c_str());
 					if (cmd == "quit" || cmd == "exit")
