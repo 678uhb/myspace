@@ -4,7 +4,7 @@ c++, string utils,  network utils, etc, all in one hpp
 ```c++
 #include "this_space.hpp"
 
-class client : public enable_shared_from_this<client> {
+class client{
 public:
 	client(shared_ptr<socketstream_t> c) 
 	:c_(c){
