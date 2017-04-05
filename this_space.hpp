@@ -219,7 +219,7 @@ namespace this_space {
 	string& toupper(string& src) { for (auto& c : src) c = std::toupper(c); return src; }
 
 	template<class = void>
-	list<string> cut(string& src, const string& tokens) {
+	list<string> lsplit(string& src, const string& tokens) {
 		list<string> ret;
 		do {
 			auto pos = src.find_first_of(tokens);

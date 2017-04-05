@@ -17,7 +17,7 @@ public:
 private:
 	void do_recv() {
 		buf_.append(move(c_->read()));
-		auto cmds = strip(cut(buf_, "\n"));
+		auto cmds = strip(lsplit(buf_, "\n"));
 		for (auto& cmd : cmds) {
 			debug("recv cmd : %s", cmd.c_str());
 			if (cmd == "quit" || cmd == "exit")
