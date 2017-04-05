@@ -553,7 +553,7 @@ namespace this_space {
 	class resource_t {
 	public:
 		resource_t(type_t x):res_(move(x)){}
-		virtual ~resource_t() = 0 { }
+		virtual ~resource_t() = 0;
 		resource_t(resource_t<type_t>&& o)
 		: res_(move(o.res_)) {}
 		resource_t(const resource_t&) = delete;
@@ -563,6 +563,10 @@ namespace this_space {
 	protected:
 		type_t res_;
 	};
+	template<class type_t>
+	resource_t<type_t>::~resource_t() {
+
+	}
 
 	class fd_t : public resource_t<int> {
 	public:
