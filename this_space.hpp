@@ -28,6 +28,7 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <direct.h>
+#include <corecrt_io.h>
 #pragma comment(lib, "ws2_32.lib")
 #elif defined(this_platform_linux)
 #include <unistd.h>
@@ -64,6 +65,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <tuple>
 
 // this space
 #define this_space  _
@@ -547,75 +549,115 @@ namespace this_space {
 		unordered_map<string, unordered_map<string, string>> maps_;
 	};
 
-	template<class = void>
-	void setblock(int fd, bool f) {
-#ifdef this_platform_windows
-		unsigned long ul = (f ? 0 : 1);
-		throw_syserror_if(0 != ::ioctlsocket(fd, FIONBIO, (unsigned long *)&ul));
-#else
-		auto flag = ::fcntl(fd, F_GETFL, 0);
-		throw_syserror_if(flag < 0);
-
-		if (f){
-			if ( flag & O_NONBLOCK )
-				throw_syserror_if(0 != ::fcntl(fd, F_SETFL, (flag & ~O_NONBLOCK)));
-		}
-		else{
-			if(!( flag & O_NONBLOCK))
-				throw_syserror_if(0 != ::fcntl(fd, F_SETFL, flag | O_NONBLOCK));
-		}
-#endif
-	}
-
-	template<class = void>
-	void closesock(int fd) {
-#ifdef this_platform_windows
-		while (WSAEWOULDBLOCK == ::closesocket(fd)) {
-			setblock(fd, true);
-			this_thread::yield();
-		}
-#else
-		::close(fd);
-#endif
-	}
-
-	class socketstream_t {
+	template<class type_t>
+	class resource_t {
 	public:
-		socketstream_t(int fd) : fd_(fd) {
+		resource_t(type_t x):res_(move(x)){}
+		virtual ~resource_t() = 0 { }
+		resource_t(resource_t<type_t>&& o)
+		: res_(move(o.res_)) {}
+		resource_t(const resource_t&) = delete;
+	public:
+		virtual type_t& get() = 0;
+		virtual void close() = 0;
+	protected:
+		type_t res_;
+	};
+
+	class fd_t : public resource_t<int> {
+	public:
+		fd_t(int fd = -1)
+			:resource_t<int>(fd) {}
+		~fd_t() {
+			close();
+		}
+	public:
+		virtual int& get() {
+			return res_;
+		}
+		int getfd() {
+			return res_;
+		}
+		virtual void close() {
+			if (res_ >= 0)
+#ifdef this_platform_windows
+				::_close(res_);
+#else
+				::close(res_);
+#endif
+			res_ = -1;
+		}
+#ifndef this_platform_windows
+		void setblock(bool f) {
+			auto flag = ::fcntl(res_, F_GETFL, 0);
+			throw_syserror_if(flag < 0);
+
+			if (f) {
+				if (flag & O_NONBLOCK)
+					throw_syserror_if(0 != ::fcntl(res_, F_SETFL, (flag & ~O_NONBLOCK)));
+			}
+			else {
+				if (!(flag & O_NONBLOCK))
+					throw_syserror_if(0 != ::fcntl(res_, F_SETFL, flag | O_NONBLOCK));
+			}
+		}
+#endif
+	};
+
+	class socket_t : public fd_t {
+	public:
+		socket_t(int fd = -1) :fd_t(fd) {}
+		~socket_t() {
+			close();
+		}
+	public:
+#ifdef this_platform_windows
+		virtual void close() {
+			while (WSAEWOULDBLOCK == ::closesocket(res_)) {
+				setblock(true);
+			}
+			res_ = -1;
+		}
+#endif
+#ifdef this_platform_windows
+		void setblock(bool f) {
+			unsigned long ul = (f ? 0 : 1);
+			throw_syserror_if(0 != ::ioctlsocket(res_, FIONBIO, (unsigned long *)&ul));
+		}
+#endif
+	};
+
+	class socketstream_t  : public socket_t {
+	public:
+		socketstream_t(int fd) : socket_t(fd) {
 
 		}
 		socketstream_t(const string& ip, uint16_t port) {
-			fd_ = (int)::socket(AF_INET, SOCK_STREAM, 0);
+			res_ = (int)::socket(AF_INET, SOCK_STREAM, 0);
 			scope_t closefd( [this]() {close();});
-			throw_syserror_if(fd_ < 0);
+			throw_syserror_if(res_ < 0);
 			sockaddr_in addr;
 			addr.sin_family = AF_INET;
 			addr.sin_port = htons(port);
 			throw_syserror_if(1 != ::inet_pton(AF_INET, ip.c_str(), &addr.sin_addr));
-			throw_syserror_if(0 != ::connect(fd_, (sockaddr*)&addr, sizeof(addr)));
+			throw_syserror_if(0 != ::connect(res_, (sockaddr*)&addr, sizeof(addr)));
 			closefd.dismiss();
 		}
-		~socketstream_t() {
-			close();
-		}
 	public:
-		int getfd() {
-			return fd_;
-		}
 		void writeall(const string& buf) {
 			size_t sendn = 0;
 			while (sendn < buf.size()) {
-				setblock(fd_, true);
+				setblock(true);
 				sendn += write(buf.substr(sendn));
 			}	
 		}
 		size_t write(const string& buf) {
-			throw_runtimerror_if(fd_ < 0);
+			throw_runtimerror_if(res_ < 0);
 			size_t writen = 0;
 			while (true) {
 				if (writen >= buf.size())
 					return writen;
-				int n = ::send(fd_, buf.c_str() + writen, int(buf.size() - writen), 0);
+				int n = ::send(res_, buf.c_str() + writen, int(buf.size() - writen), 0);
 				if (n <= 0) {
 					if (writen > 0)
 						return writen;
@@ -638,9 +680,9 @@ namespace this_space {
 			}
 		}
 		string read(size_t count = 0, bool block = false) {
-			throw_runtimerror_if(fd_ < 0);
+			throw_runtimerror_if(res_ < 0);
 			if (count == 0) block = false;
-			setblock(fd_, block);
+			setblock(block);
 			string ret;
 			static const size_t buflen = (10 << 10);
 			size_t recved = 0;
@@ -648,7 +690,7 @@ namespace this_space {
 			while (true) {
 				if (count && recved >= count)
 					return move(ret);
-				int n = ::recv(fd_, buf.get(), int(count ? min(buflen, count - recved) : buflen), 0);
+				int n = ::recv(res_, buf.get(), int(count ? min(buflen, count - recved) : buflen), 0);
 				if (n <= 0) {
 					if (!ret.empty())
 						return move(ret);
@@ -672,49 +714,28 @@ namespace this_space {
 				ret.append(buf.get(), n);
 			}
 		}
-
-		void close() {
-			if (fd_ >= 0) {
-				closesock(fd_);
-				fd_ = -1;
-			}
-		}
-	private:
-		int fd_ = -1;
 	};
 
 
-	class listenstream_t {
+	class listenstream_t  : public socket_t {
 	public:
 		listenstream_t(uint16_t port) {
-			fd_ = (int)socket(AF_INET, SOCK_STREAM, 0);
-			throw_runtimerror_if(fd_ < 0);
+			res_ = (int)socket(AF_INET, SOCK_STREAM, 0);
+			throw_runtimerror_if(res_ < 0);
 			scope_t closefd([this]() {close(); });
 			sockaddr_in addr;
 			addr.sin_family = AF_INET;
 			addr.sin_port = htons(port);
 			addr.sin_addr.s_addr = htonl(INADDR_ANY);
-			throw_syserror_if(0 != ::bind(fd_, (sockaddr*)&addr, sizeof(addr)));
-			throw_syserror_if(0 != ::listen(fd_, 1024));
+			throw_syserror_if(0 != ::bind(res_, (sockaddr*)&addr, sizeof(addr)));
+			throw_syserror_if(0 != ::listen(res_, 1024));
 			closefd.dismiss();
 		}
-		~listenstream_t() {
-			close();
-		}
 	public:
-		int getfd() {
-			return fd_;
-		}
-		void close() {
-			if (fd_ >= 0) {
-				closesock(fd_);
-				fd_ = -1;
-			}
-		}
 		shared_ptr<socketstream_t> accept() {
 			sockaddr_in addr;
 			socklen_t addrlen = sizeof(addr);
-			int n = (int)::accept(fd_, (sockaddr*)&addr, &addrlen);
+			int n = (int)::accept(res_, (sockaddr*)&addr, &addrlen);
 			if (n <= 0) {
 				int ec = getlasterror();
 				switch (ec) {
@@ -733,126 +754,78 @@ namespace this_space {
 			}
 			return new_shared<socketstream_t>(n);
 		}
-	private:
-		int fd_ = -1;
 	};
 
-
-	class pump_t {
+	template<class hasfd_t>
+	class fdpump_t {
 	public:
-		class cmd_pop_t{
-		};
-		class cmd_stop_t {
-		};
-	public:
-		~pump_t() {
-			stop();
-		}
-	public:
-		void stop() {
-			stop_ = true;
-			cond_.notify_one();
-		}
-		pump_t& push(shared_ptr<socketstream_t> l, function<void()> callback) {
-			setblock(l->getfd(), false);
-			if_lock(mtx_) {
-				sockstreams_[l] = callback;
+		fdpump_t& push(shared_ptr<hasfd_t> hf, bool r, bool w, bool e, function<void(bool,bool,bool)> callback) {
+			throw_runtimerror_if(!hf);
+			throw_runtimerror_if(hf->getfd() < 0);
+			throw_runtimerror_if(!r && !w && !e);
+			throw_runtimerror_if(!callback);
+			if_lock(pending_mtx_) {
+				pending_store_.emplace(hf,move(tuple<bool,bool,bool, function<void(bool, bool, bool)>>(r,w,e,callback)));
 			}
 			return *this;
 		}
-		pump_t& push(shared_ptr<listenstream_t> l, function<void()> callback) {
-			setblock(l->getfd(), false);
-			if_lock(mtx_) {
-				listenstreams_[l] = callback;
-			}
-			return *this;
-		}
-		pump_t& run(bool forever = false) {
-			while (!stop_) {
+		fdpump_t& run() {
+			while (true) {
 				fd_set rfds, wfds, efds;
 				FD_ZERO(&rfds);
 				FD_ZERO(&wfds);
 				FD_ZERO(&efds);
-				int maxfd = 0;
-				decltype(listenstreams_) l;
-				decltype(sockstreams_) s;
+				int maxfd = -1;
 				if_lock(mtx_) {
-					if (listenstreams_.empty() && sockstreams_.empty()) {
-						if(!forever)
-							return *this;
-						else {
-							cond_.wait(_ul, [this]() { return !listenstreams_.empty() || !sockstreams_.empty() || stop_; });
-							continue;
-						}
+					if_lock(pending_mtx_) {
+						for (auto& p : pending_store_)
+							store_.emplace(move(p));
+						pending_store_.clear();
 					}
-					l.swap(listenstreams_);
-					s.swap(sockstreams_);
-				}
-				scope(if_lock(mtx_) {
-					for (auto x : l)
-						listenstreams_.insert(x);
-					for (auto x : s)
-						sockstreams_.insert(x);
-				});
-
-				decltype(l) cl;
-				decltype(s) cs;
-				scope(
-					for (auto x : cl) l.erase(x.first);
-				for (auto x : cs) s.erase(x.first);
-				);
-
-				for (auto& p : l) {
-					if (!p.first || !p.second || p.first->getfd() < 0) {
-						cl.insert(p);
+					if (store_.empty()) {
+						return *this;
 					}
-					else {
-						setblock(p.first->getfd(), false);
-						FD_SET(p.first->getfd(), &rfds);
-						FD_SET(p.first->getfd(), &efds);
-						maxfd = max(maxfd, p.first->getfd());
+					for (auto itr = store_.begin(); itr != store_.end();) {
+						if (itr->first->getfd() < 0) {
+							itr = store_.erase(itr);
+						}
+						if (std::get<0>(itr->second)) {
+							itr->first->setblock(false);
+							FD_SET(itr->first->getfd(), &rfds);
+							maxfd = max(maxfd, itr->first->getfd());
+						}
+						if (std::get<1>(itr->second)) {
+							itr->first->setblock(false);
+							FD_SET(itr->first->getfd(), &wfds);
+							maxfd = max(maxfd, itr->first->getfd());
+						}
+						if (std::get<2>(itr->second)) {
+							itr->first->setblock(false);
+							FD_SET(itr->first->getfd(), &efds);
+							maxfd = max(maxfd, itr->first->getfd());
+						}
+						++itr;
 					}
-				}
-				for (auto& p : s) {
-					if (!p.first || !p.second || p.first->getfd() < 0) {
-						cs.insert(p);
-					}
-					else {
-						setblock(p.first->getfd(), false);
-						FD_SET(p.first->getfd(), &rfds);
-						FD_SET(p.first->getfd(), &efds);
-						maxfd = max(maxfd, p.first->getfd());
-					}
-				}
-				timeval tv = { 1, 0 };
-				int n = ::select(maxfd + 1, &rfds, &wfds, &efds, &tv);
-				throw_syserror_if(n < 0);
-				
-				for (auto& p : l) {
-					if (FD_ISSET(p.first->getfd(), &rfds)
-						|| FD_ISSET(p.first->getfd(), &efds)) {
-						try {
-							p.second();
-						}
-						catch (cmd_pop_t&) {
-							cl.insert(p);
-						}
-						catch (cmd_stop_t&) {
-							return *this;
-						}
-					}
-				}
-				for (auto& p : s) {
-					if (FD_ISSET(p.first->getfd(), &rfds)
-						|| FD_ISSET(p.first->getfd(), &efds)) {
-						try {
-							p.second();
-						}
-						catch (cmd_pop_t&) {
-							cs.insert(p);
-						}
-						catch (cmd_stop_t&) {
-							return *this;
+					if (maxfd < 0)
+						continue;
+					timeval tv = { 1, 0 };
+					int n = ::select(maxfd + 1, &rfds, &wfds, &efds, &tv);
+					throw_syserror_if(n < 0);
+					if (n > 0) {
+						for (auto itr = store_.begin(); itr != store_.end();) {
+							bool r = (0 != FD_ISSET(itr->first->getfd(), &rfds));
+							bool w = (0 != FD_ISSET(itr->first->getfd(), &wfds));
+							bool e = (0 != FD_ISSET(itr->first->getfd(), &efds));
+							if (r || w || e) {
+								--n;
+								decltype(itr->second) tmp(move(itr->second));
+								itr = store_.erase(itr);
+								get<3>(tmp)(r, w, e);
+								if (n <= 0)
+									break;
+								continue;
+							}
+							++itr;
 						}
 					}
 				}
@@ -860,11 +833,10 @@ namespace this_space {
 			return *this;
 		}
 	private:
-		bool stop_ = false;
 		mutex mtx_;
-		condition_variable cond_;
-		unordered_map<shared_ptr<socketstream_t>, function<void()>> sockstreams_;
-		unordered_map<shared_ptr<listenstream_t>, function<void()>> listenstreams_;
+		unordered_map<shared_ptr<hasfd_t>, tuple<bool, bool, bool, function<void(bool, bool, bool)>>> store_;
+		mutex pending_mtx_;
+		unordered_map<shared_ptr<hasfd_t>, tuple<bool, bool, bool, function<void(bool, bool, bool)>>> pending_store_;
 	};
 
 #ifdef this_platform_windows
