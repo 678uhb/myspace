@@ -629,6 +629,16 @@ namespace this_space {
 			throw_syserror_if(0 != ::ioctlsocket(res_, FIONBIO, (unsigned long *)&ul));
 		}
 #endif
+		int getsockerror() {
+			int err = 0;
+#if defined(this_platform_windows)
+			int len = sizeof(err);
+#else
+			socklen_t len = sizeof(err);
+#endif
+			throw_syserror_if(0 != ::getsockopt(res_, SOL_SOCKET, SO_ERROR, (char*)&err, &len));
+			return err;
+		}
 	};
 
 	class socketstream_t  : public socket_t {
@@ -698,7 +708,9 @@ namespace this_space {
 				if (n <= 0) {
 					if (!ret.empty())
 						return move(ret);
-					throw_syserror_if(n == 0);
+					if (n == 0) {
+						throw_syserror(getsockerror());
+					}
 					int ec = getlasterror();
 					switch (ec) {
 					case EINTR:
@@ -782,8 +794,9 @@ namespace this_space {
 				int maxfd = -1;
 				if_lock(mtx_) {
 					if_lock(pending_mtx_) {
-						for (auto& p : pending_store_)
+						for (auto& p : pending_store_) {
 							store_.emplace(move(p));
+						}
 						pending_store_.clear();
 					}
 					if (store_.empty()) {
@@ -792,6 +805,7 @@ namespace this_space {
 					for (auto itr = store_.begin(); itr != store_.end();) {
 						if (itr->first->getfd() < 0) {
 							itr = store_.erase(itr);
+							continue;
 						}
 						if (std::get<0>(itr->second)) {
 							itr->first->setblock(false);
@@ -812,10 +826,25 @@ namespace this_space {
 					}
 					if (maxfd < 0)
 						continue;
-					timeval tv = { 1, 0 };
+					{
+						unique_lock<mutex> ul(pending_mtx_, defer_lock);
+						if (ul.try_lock() && pending_store_.empty()) {
+							if(tv_.tv_usec < 1)
+								tv_.tv_usec = 1;
+							else if (tv_.tv_usec >= 1000000)
+								tv_.tv_usec = 1000000;
+							else
+								tv_.tv_usec <<= 1;
+						}
+						else {
+							tv_.tv_usec = 0;
+						}
+					}
+					timeval tv = tv_;
 					int n = ::select(maxfd + 1, &rfds, &wfds, &efds, &tv);
 					throw_syserror_if(n < 0);
 					if (n > 0) {
+						tv_ = { 0, 0 };
 						for (auto itr = store_.begin(); itr != store_.end();) {
 							bool r = (0 != FD_ISSET(itr->first->getfd(), &rfds));
 							bool w = (0 != FD_ISSET(itr->first->getfd(), &wfds));
@@ -829,6 +858,14 @@ namespace this_space {
 									break;
 								continue;
 							}
+							else if (auto s = dynamic_pointer_cast<socket_t>(itr->first)) {
+								if (0 != s->getsockerror()) {
+									decltype(itr->second) tmp(move(itr->second));
+									itr = store_.erase(itr);
+									get<3>(tmp)(r, w, e);
+									continue;
+								}
+							}
 							++itr;
 						}
 					}
@@ -837,6 +874,7 @@ namespace this_space {
 			return *this;
 		}
 	private:
+		timeval tv_ = { 0, 0 };
 		mutex mtx_;
 		unordered_map<shared_ptr<hasfd_t>, tuple<bool, bool, bool, function<void(bool, bool, bool)>>> store_;
 		mutex pending_mtx_;
