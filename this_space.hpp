@@ -29,7 +29,7 @@
 #include <WS2tcpip.h>
 #include <direct.h>
 #include <corecrt_io.h>
-#pragma comment(lib, "ws2_32.lib")
+#include <Objbase.h>
 #elif defined(this_platform_linux)
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -37,6 +37,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <uuid/uuid.h>
 #else
 #error unknown platform
 #endif
@@ -56,6 +57,7 @@
 #include <future>
 #include <ios>
 #include <iostream>
+#include <iomanip>
 #include <list>
 #include <string>
 #include <sstream>
@@ -73,6 +75,46 @@ namespace this_space {
 
 	using namespace std;
 	using namespace chrono;
+	template<class t, class... a>
+	unique_ptr<t> new_unique(a&&... args) {
+		while (true) {
+			try {
+				auto p = new t(forward<a&&>(args)...);
+				if (p) return unique_ptr<t>(p);
+			}
+			catch (bad_alloc&) { this_thread::yield(); }
+		}
+	}
+	template<class t>
+	unique_ptr<t[]> new_unique_array(size_t n) {
+		while (true) {
+			try {
+				auto p = new t[n];
+				if (p) return unique_ptr<t[]>(p);
+			}
+			catch (bad_alloc&) { this_thread::yield(); }
+		}
+	}
+	template<class t, class... a>
+	shared_ptr<t> new_shared(a&&... args) {
+		while (true) {
+			try {
+				auto p = new t(forward<a&&>(args)...);
+				if (p) return shared_ptr<t>(p);
+			}
+			catch (bad_alloc&) { this_thread::yield(); }
+		}
+	}
+	template<class t>
+	shared_ptr<t[]> new_shared_array(size_t n) {
+		while (true) {
+			try {
+				auto p = new t[n];
+				if (p) return shared_ptr<t[]>(p);
+			}
+			catch (bad_alloc&) { this_thread::yield(); }
+		}
+	}
 
 	class scope_t {
 	public:
@@ -120,19 +162,6 @@ namespace this_space {
 	auto ec = getlasterror();  \
     throw_e(syserror_t(__FILE__,__LINE__,ec, geterrormsg(ec)));  \
 } while(0)
-#define throw_runtimerror(fmt, ...) do {			\
-	va_list ap;										\
-	va_start(ap, fmt);								\
-	scope(va_end(ap));								\
-	string desc = move(vformat(fmt, ap));			\
-	throw_e(exception_t(__FILE__,__LINE__, desc));	\
-} while(0)
-#define throw_runtimerror_if(x) do {			\
-	if(x){												\
-		throw_e(exception_t(__FILE__, __LINE__, #x));	\
-	}													\
-} while(0)
-#define catch_all() catch(...){print_exception();}
 	
 
 	template<size_t len = 1024>
@@ -140,13 +169,28 @@ namespace this_space {
 		if (len <= 1)
 			return "";
 		string ret;
-		//auto buf = new_unique_array<char>(len);
-		unique_ptr<char[]> buf(new char[len]);
+		auto buf = new_unique_array<char>(len);
+		//unique_ptr<char[]> buf(new char[len]);
 		int n = ::vsnprintf(buf.get(), len, fmt, ap);
 		if (n > 0)
 			ret.assign(buf.get(), min(len, (size_t)n));
 		return move(ret);
 	}
+template<class = void>
+void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
+	va_list ap;										
+		va_start(ap, fmt);						
+		scope(va_end(ap));								
+		string desc = move(vformat(fmt, ap));			
+		throw_e(exception_t(file, line, desc));	
+}
+#define throw_runtimerror(fmt, ...) throw_runtimerror_impl(__FILE__,__LINE__,fmt, ##__VA_ARGS__)
+#define throw_runtimerror_if(x) do {			\
+	if(x){												\
+		throw_e(exception_t(__FILE__, __LINE__, #x));	\
+	}													\
+} while(0)
+#define catch_all() catch(...){print_exception();}
 	template<size_t len = 1024>
 	string format(const char* fmt, ...) {
 		if (len <= 1)
@@ -172,46 +216,6 @@ namespace this_space {
 
 	
 
-	template<class t, class... a>
-	unique_ptr<t> new_unique(a&&... args) {
-		while (true) {
-			try {
-				auto p = new t(forward<a&&>(args)...);
-				if (p) return unique_ptr<t>(p);
-			}
-			catch (bad_alloc&) { this_thread::yield(); }
-		}
-	}
-	template<class t>
-	unique_ptr<t[]> new_unique_array(size_t n) {
-		while (true) {
-			try {
-				auto p = new t[n];
-				if (p) return unique_ptr<t[]>(p);
-			}
-			catch (bad_alloc&) { this_thread::yield(); }
-		}
-	}
-	template<class t, class... a>
-	shared_ptr<t> new_shared(a&&... args) {
-		while (true) {
-			try {
-				auto p = new t(forward<a&&>(args)...);
-				if (p) return shared_ptr<t>(p);
-			}
-			catch (bad_alloc&) { this_thread::yield(); }
-		}
-	}
-	template<class t>
-	shared_ptr<t[]> new_shared_array(size_t n) {
-		while (true) {
-			try {
-				auto p = new t[n];
-				if (p) return shared_ptr<t[]>(p);
-			}
-			catch (bad_alloc&) { this_thread::yield(); }
-		}
-	}
 
 	template<class = void>
 	string& tolower(string& src) { for (auto& c : src) c = std::tolower(c); return src; }
@@ -336,6 +340,47 @@ namespace this_space {
 	}
 
 	template<class = void>
+	string uuid() {
+#ifdef this_platform_windows
+		GUID guid;
+		string uuid;
+		::CoCreateGuid(&guid);
+		{
+			stringstream ss;
+			ss << hex << setw(sizeof(guid.Data1)<<1) << setfill('0') << guid.Data1;
+			uuid.append(move(ss.str()));
+			uuid.append(1, '-');
+		}
+		{
+			stringstream ss;
+			ss << hex << setw(sizeof(guid.Data2) << 1) << setfill('0') << guid.Data2;
+			uuid.append(move(ss.str()));
+			uuid.append(1, '-');
+		}
+		{
+			stringstream ss;
+			ss << hex << setw(sizeof(guid.Data3) << 1) << setfill('0') << guid.Data3;
+			uuid.append(move(ss.str()));
+			uuid.append(1, '-');
+		}
+		for( auto i = 0; i < sizeof(guid.Data4); ++i)
+		{
+			stringstream ss;
+			ss << hex << setw(2) << setfill('0') << (int)guid.Data4[i];
+			uuid.append(move(ss.str()));
+		}
+		return move(uuid);
+#endif
+#ifdef this_platform_linux
+		uuid_t uid;	
+		uuid_generate(uid);
+		stringstream ss;
+		for(size_t i = 0; i < sizeof(uid); ++i)
+			ss << hex << setw(2) << setfill('0') << (int)((char*)&uid)[0];
+		return move(ss.str());
+#endif
+	}
+	template<class = void>
 	string getlasterrormsg() {
 		return move(geterrormsg(getlasterror()));
 	}
@@ -401,10 +446,12 @@ namespace this_space {
 								q.swap(get_static().logqueue_.hold_);
 							}
 							while (!q.empty()) {
+								scope(q.pop_front());
 								if (get_static().log2console_) {
 									cout << q.front();
 								}
-
+								if (!get_static().log2file_)
+									continue;
 								auto size = ofs.tellp();
 								if (size > (100 << 20)) {
 									ofs.close();
@@ -426,7 +473,6 @@ namespace this_space {
 								ofs.write(q.front().c_str(), q.front().size());
 								if (q.size() < 100)
 									ofs.flush();
-								q.pop_front();
 							}
 						}
 						catch (...) {
@@ -486,7 +532,7 @@ namespace this_space {
 	public:
 		config_t(const string& path) {
 			string line;
-			string section = "default";
+			string section = "this";
 			for (ifstream fs(path); getline(fs, line); ) {
 				if (strip(line).empty())continue;
 				if (line[0] == '[') {
@@ -506,7 +552,6 @@ namespace this_space {
 			class find_t {};
 			string s, k, v;
 			try {
-				if (sk.find("default") == string::npos) {
 					auto pos = sk.find_first_of('.');
 					if (pos != string::npos) {
 						s = move(sk.substr(0, pos));
@@ -520,13 +565,11 @@ namespace this_space {
 							}
 						}
 					}
-				}
-				auto itr = maps_["default"].find(sk);
-				if (itr != maps_["default"].end()) {
+				auto itr = maps_["this"].find(sk);
+				if (itr != maps_["this"].end()) {
 					v = itr->second;
 					throw find_t();
 				}
-				throw_runtimerror("%s configure not found", sk.c_str());
 			}
 			catch (find_t&) {
 				stringstream ss;
@@ -535,6 +578,8 @@ namespace this_space {
 				ss >> x;
 				return move(x);
 			}
+			throw_runtimerror("%s configure not found", sk.c_str());
+			return type_t();
 		}
 		template<class type_t = string>
 		type_t get(const string& sk, const type_t& def) {
@@ -1003,6 +1048,22 @@ namespace this_space {
 			auto ret = job->get_future();
 			if_lock(jobs_.mtx_) {
 				jobs_.hold_.emplace_back([job]() { (*job)(); });
+			}
+			jobs_.cond_.notify_one();
+			return ret;
+		}
+		template<class ft, class... argst>
+		auto push(bool putfront, ft&& f, argst&&... args)
+			-> future<typename result_of<ft(argst...)>::type> {
+			using return_t = typename result_of<ft(argst...)>::type;
+			auto job = make_shared<packaged_task<return_t()>>(
+				bind(forward<ft>(f), forward<argst>(args)...));
+			auto ret = job->get_future();
+			if_lock(jobs_.mtx_) {
+				if(putfront)
+					jobs_.hold_.emplace_front([job]() { (*job)(); });
+				else
+					jobs_.hold_.emplace_back([job]() { (*job)(); });
 			}
 			jobs_.cond_.notify_one();
 			return ret;
