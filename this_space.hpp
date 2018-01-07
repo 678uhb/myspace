@@ -30,6 +30,7 @@
 #include <direct.h>
 #include <corecrt_io.h>
 #include <Objbase.h>
+#pragma comment(lib, "ws2_32.lib")
 #elif defined(this_platform_linux)
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -47,6 +48,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <cctype>
+#include <csetjmp>
 //cpp headers
 #include <bitset>
 #include <chrono>
@@ -68,13 +70,15 @@
 #include <utility>
 #include <vector>
 #include <tuple>
-
+#include <deque>
 // this space
 #define this_space  _
 namespace this_space {
 
 	using namespace std;
 	using namespace chrono;
+	using namespace this_thread;
+
 	template<class t, class... a>
 	unique_ptr<t> new_unique(a&&... args) {
 		while (true) {
@@ -119,11 +123,11 @@ namespace this_space {
 	class scope_t {
 	public:
 		template<class f_t, class... a_t>
-		scope_t(f_t&& f, a_t&&... args) :f_(bind(forward<f_t&&>(f), forward<a_t&&>(args)...)) {}
-		~scope_t() { if (f_) f_(); }
-		void dismiss() { f_ = nullptr; }
+		scope_t(f_t&& f, a_t&&... args) :_f(bind(forward<f_t&&>(f), forward<a_t&&>(args)...)) {}
+		~scope_t() { if (_f) try { _f(); } catch (...) {}; }
+		void dismiss() { _f = nullptr; }
 	private:
-		function<void()> f_ = nullptr;
+		function<void()> _f = nullptr;
 	};
 
 	template<class throw_t>
@@ -234,58 +238,55 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		return move(ret);
 	}
 
-	template<class = void>
-	string& lstrip(string& src, const string& token = " \r\n\t") {
-		return src.erase(0,src.find_first_not_of(token));
-	}
 
-	template<class = void>
-	string& rstrip(string& src, const string& token = " \r\n\t") {
-		return src.erase(src.find_last_not_of(token)+1 );
-	}
-
-	template<class type_t = string>
-	type_t& strip(type_t& src, const string& token = " \r\n\t") {
-		return lstrip(rstrip(src, token), token);
-	}
-
-	template<>
-	list<string>& strip<list<string>>(list<string>& src, const string& token) {
-		for (auto itr = src.begin(); itr != src.end(); ) {
-			if (strip(*itr).empty())
-				src.erase(itr++);
-			else
-				++itr;
-		}
-		return src;
-	}
-	template<class = void>
-	list<string> strip(list<string>&& src, const string& token = "\r\n\t ") {
-		for (auto itr = src.begin(); itr != src.end(); ) {
-			if (strip(*itr).empty())
-				src.erase(itr++);
-			else
-				++itr;
-		}
-		return move(src);
-	}
-
-
-	template<class = void>
-	list<string> split(const string& src, const string& tokens = " \r\n\t") {
-		list<string> ret;
-		string tmp = src;
-		while (!tmp.empty()) {
-			auto pos = tmp.find_first_of(tokens);
-			string subs = move(tmp.substr(0, pos));
-			if(!subs.empty()){
-				ret.emplace_back(move(subs));
+	string strip(const string& src, const string& token = "") {
+		if (src.empty())
+			return src;
+		if (token.empty()) {
+			size_t first = 0;
+			for (auto c : src) {
+				if (std::isblank(c) || std::iscntrl(c)) {
+					first++;
+					continue;
+				}
+				break;
 			}
-			tmp.erase(0, pos + 1);
+			size_t last = src.size();
+			for (auto itr = src.rbegin(); itr != src.rend(); ++itr) {
+				if (std::isblank(*itr) || std::iscntrl(*itr)) {
+					last--;
+					continue;
+				}
+				break;
+			}
+			return move(src.substr(first, last - first));
+		}
+		auto beginpos = src.find_first_not_of(token);
+		auto endpos = src.find_last_not_of(token);
+		return move(src.substr(beginpos, endpos - beginpos));
+	}
+
+	deque<string> split(const string& src, const string& tokens) {
+		deque<string> ret;
+		string tmp = src;
+		for (size_t pos = src.find_first_of(tokens), last_pos = 0;
+			last_pos != string::npos;
+			last_pos = pos, pos = src.find_first_of(tokens, last_pos + tokens.size())) {
+			ret.emplace_back(move(src.substr((last_pos == 0? 0 : last_pos + tokens.size()), pos)));
 		}
 		return move(ret);
 	}
 
+
+	deque<string> split(const string& src, char delm) {
+		return move(split(src, string(1, delm)));
+	}
+
+	deque<string> split(const char* src, char delm) {
+		return move(split(string(src), string(1, delm)));
+	}
+
+	
 	
 	template<class = void>
 	string strftime(time_t t, const string& fmt = "%F %T") {
@@ -303,14 +304,14 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		return move(ret);
 	}
 
-#define if_lock(mtx)  if(  auto _ul = [](mutex& m){ return move(unique_lock<mutex>(m)); }(mtx) )
+#define if_lock(mtx)  if(  auto __ul = [](mutex& m){ return move(unique_lock<mutex>(m)); }(mtx) )
 
 	template<class hold_t, class mtx_t = mutex, class cond_t = condition_variable>
 	class shared_t {
 	public:
-		hold_t hold_;
-		mtx_t mtx_;
-		cond_t cond_;
+		hold_t _hold;
+		mtx_t _mtx;
+		cond_t _cond;
 	};
 
 	template<class = void>
@@ -390,13 +391,13 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 	public:
 		enum level_t { debug, info, warn, error };
 	public:
-		static level_t level() { return get_static().lv_;}
-		static level_t level(level_t lv) { scope(get_static().lv_ = lv); return get_static().lv_; }
-		static void log2console(bool f) { get_static().log2console_ = f; }
-		static void log2file(bool f) { get_static().log2file_ = f; }
-		static void logdir(const string& path) { get_static().lgodir_ = path; get_static().log2file_ = true; }
+		static level_t level() { return get_static()._lv;}
+		static level_t level(level_t lv) { scope(get_static()._lv = lv); return get_static()._lv; }
+		static void log2console(bool f) { get_static()._log2console = f; }
+		static void log2file(bool f) { get_static()._log2file = f; }
+		static void logdir(const string& path) { get_static()._logdir = path; get_static()._log2file = true; }
 		static void print(level_t lv, const char* file, int line, const char* fmt, ...) {
-			if (!get_static().log2file_ && !get_static().log2console_)
+			if (!get_static()._log2file && !get_static()._log2console)
 				return;
 			
 			va_list ap;
@@ -416,41 +417,41 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 				<< "[" << this_thread::get_id() << "]"
 				<< "[" << file << ":" << line << "]" << msg;
 
-			if_lock(get_static().logqueue_.mtx_) {
-				if (get_static().logqueue_.hold_.size() > 10000) {
+			if_lock(get_static()._logqueue._mtx) {
+				if (get_static()._logqueue._hold.size() > 10000) {
 					size_t x = 0;
-					while (get_static().logqueue_.hold_.size() > 10000) {
-						get_static().logqueue_.hold_.pop_front();
+					while (get_static()._logqueue._hold.size() > 10000) {
+						get_static()._logqueue._hold.pop_front();
 						++x;
 					}
 					stringstream ss;
 					ss << "[warn][" << this_space::strftime(time(0)) << "][" << this_thread::get_id()
 						<< "][" source_pos "]" << format("too much log to sink, truncate %u logs", x);
-					get_static().logqueue_.hold_.emplace_back(move(ss.str()));
+					get_static()._logqueue._hold.emplace_back(move(ss.str()));
 				}
-				get_static().logqueue_.hold_.emplace_back(move(ss.str()));
+				get_static()._logqueue._hold.emplace_back(move(ss.str()));
 			}
-			get_static().logqueue_.cond_.notify_one();
+			get_static()._logqueue._cond.notify_one();
 
-			call_once(get_static().onceflag_, []() {
+			call_once(get_static()._onceflag, []() {
 				thread([]() {
-					ofstream ofs(get_static().lgodir_ + "log", ios::out|ios::app);
+					ofstream ofs(get_static()._logdir + "log", ios::out|ios::app);
 					while (true) {
 						try {
 							list<string> q;
-							if_lock(get_static().logqueue_.mtx_) {
-								if (get_static().logqueue_.hold_.empty()) {
-									get_static().logqueue_.cond_.wait(_ul, []() { return !get_static().logqueue_.hold_.empty(); });
+							if_lock(get_static()._logqueue._mtx) {
+								if (get_static()._logqueue._hold.empty()) {
+									get_static()._logqueue._cond.wait(__ul, []() { return !get_static()._logqueue._hold.empty(); });
 									continue;
 								}
-								q.swap(get_static().logqueue_.hold_);
+								q.swap(get_static()._logqueue._hold);
 							}
 							while (!q.empty()) {
 								scope(q.pop_front());
-								if (get_static().log2console_) {
+								if (get_static()._log2console) {
 									cout << q.front();
 								}
-								if (!get_static().log2file_)
+								if (!get_static()._log2file)
 									continue;
 								auto size = ofs.tellp();
 								if (size > (100 << 20)) {
@@ -459,16 +460,16 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 										stringstream src;
 										stringstream dst;
 										if (i == 0) {
-											src << get_static().lgodir_ << "log";
+											src << get_static()._logdir << "log";
 										}
 										else {
-											src << get_static().lgodir_ << "log." << i;
+											src << get_static()._logdir << "log." << i;
 										}
-										dst << get_static().lgodir_ << "log." << i + 1;
+										dst << get_static()._logdir << "log." << i + 1;
 										::remove(dst.str().c_str());
 										::rename(src.str().c_str(), dst.str().c_str());
 									}
-									ofs.open(get_static().lgodir_ + "log",ios::out | ios::trunc);
+									ofs.open(get_static()._logdir + "log",ios::out | ios::trunc);
 								}
 								ofs.write(q.front().c_str(), q.front().size());
 								if (q.size() < 100)
@@ -485,12 +486,12 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 	private:
 		class log_static_t {
 		public:
-			level_t lv_ = debug;
-			bool log2console_ = true;
-			bool log2file_ = false;
-			string lgodir_;
-			once_flag onceflag_;
-			shared_t<list<string>> logqueue_;
+			level_t					_lv = debug;
+			bool					_log2console = true;
+			bool					_log2file = false;
+			string					_logdir;
+			once_flag				_onceflag;
+			shared_t<list<string>>	_logqueue;
 		};
 	private:
 		static log_static_t& get_static() {
@@ -653,27 +654,272 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 #endif
 	};
 
-	class socket_t : public fd_t {
+	class format_t {
 	public:
-		socket_t(int fd = -1) :fd_t(fd) {}
+		template<class type>
+		format_t& operator << (const type& x) {
+			_ss << x;
+			return *this;
+		}
+
+		template <class type>
+		operator type () {
+			type tmp;
+			_ss >> tmp;
+			return move(tmp);
+		}
+
+	private:
+		stringstream _ss;
+	};
+
+	class socket_t {
+	public:
+		socket_t(int sock) {
+			_sock = sock;
+		}
+
+
+		socket_t(const string& addr, milliseconds timeout) {
+			set_addr(addr.c_str()).connect(timeout);
+		}
+
+		socket_t(const string& addr, uint16_t port, milliseconds timeout) {
+			set_addr(addr.c_str()).set_port(port).connect(timeout);
+		}
+
 		~socket_t() {
 			close();
 		}
-	public:
-#ifdef this_platform_windows
-		virtual void close() {
-			while (WSAEWOULDBLOCK == ::closesocket(res_)) {
-				setblock(true);
+
+		size_t send(const string& data, milliseconds timeout) {
+			size_t sendn = 0;
+			for (auto this_time = chrono::system_clock::now(), last_time = this_time;
+				sendn < data.size() && (timeout -= duration_cast<milliseconds>(this_time - last_time), timeout.count() >= 0);
+				last_time = this_time, this_time = chrono::system_clock::now()) {
+				auto n = ::send(_sock, data.c_str() + sendn, int(data.size() - sendn), 0);
+				if (n > 0)
+					sendn += n;
+				else if (n == 0)
+					break;
+				else {
+					auto e = WSAGetLastError();
+					switch (e) {
+					case WSAEWOULDBLOCK:
+					case WSAEINTR:
+					case WSAEINPROGRESS: {
+						fd_set w = { 0 };
+						FD_SET(_sock, &w);
+						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
+							(long)(duration_cast<microseconds>(timeout).count() % 1000000) };
+						::select(int(_sock + 1), nullptr, &w, nullptr, &tv);
+						continue;
+					}	
+					default:
+						break;
+					}
+				}
 			}
-			res_ = -1;
+			return sendn;
 		}
-#endif
+
+		string recv(chrono::milliseconds timeout) {
+			string data;
+			size_t buflen = 4096;
+			auto buf = new_unique_array<char>(buflen);
+			for (auto this_time = chrono::system_clock::now(), last_time = this_time;
+				timeout -= duration_cast<milliseconds>(this_time - last_time), timeout.count() >= 0;
+				last_time = this_time, this_time = chrono::system_clock::now()) {
+				auto n = ::recv(_sock, buf.get(), (int)buflen, 0);
+				if (n > 0)
+					data.append(buf.get(), n);
+				else if (n == 0)
+					break;
+				else {
+					auto e = WSAGetLastError();
+					switch (e) {
+					case WSAEINTR:
+					case WSAEWOULDBLOCK: {
+						fd_set r = { 0 };
+						FD_SET(_sock, &r);
+						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
+							(long)duration_cast<microseconds>(timeout).count() % 1000000 };
+						::select(int(_sock + 1), &r, nullptr, nullptr, &tv);
+						break;
+					}
+					default:
+						return move(data);
+					}
+					
+				}
+			}
+			return move(data);
+		}
+
+		string recv(size_t len, chrono::milliseconds timeout) {
+			if (len == 0)
+				return "";
+			size_t recvn = 0;
+			auto buf = new_unique_array<char>(len);
+			for (auto this_time = chrono::system_clock::now(), last_time = this_time;
+				recvn < len && timeout.count() >= 0;
+				last_time = this_time, this_time = chrono::system_clock::now(),
+				timeout -= duration_cast<milliseconds>(this_time - last_time)) {
+				auto n = ::recv(_sock, buf.get() + recvn, int(len - recvn), 0);
+				if (n > 0) {
+					recvn += n;
+				}
+				else if (n == 0)
+					break;
+				else {
+					auto e = WSAGetLastError();
+					switch (e) {
+					case WSAEINTR:
+					case WSAEWOULDBLOCK: {
+						fd_set r = { 0 };
+						FD_SET(_sock, &r);
+						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
+							(long)duration_cast<microseconds>(timeout).count() % 1000000 };
+						::select(int(_sock + 1), &r, nullptr, nullptr, &tv);
+						break;
+					}
+					default:
+						goto end_mark;
+					}
+				}
+			}
+		end_mark:
+			return move(string(buf.get(),recvn));
+		}
+
+		socket_t& setblock() {
+			return setblock(true);
+		}
+
+
+		socket_t& setnonblock() {
+			return this->setblock(false);
+		}
+
+		operator bool() {
+			return is_connected();
+		}
+
+		bool is_blocked() {
+			return _isblocked;
+		}
+
+		bool is_connected() {
+		again:
+			char c;
+			setnonblock();
+			auto n = ::recv(_sock, &c, 1, MSG_PEEK);
+			if (n == 0)
+				return false;
+			if (n > 0)
+				return true;
+			auto e = WSAGetLastError();
+			switch (e) {
+			case WSAEWOULDBLOCK:
+			case WSAEINPROGRESS:
+				return true;
+			case WSAEINTR:
+				goto again;
+			default:
+				return false;
+			}
+		}
+
+	private:
+		void close() {
+			if (_sock >= 0) {
+				setblock(true);
+				while (WSAEWOULDBLOCK == ::closesocket(_sock)) {
+
+				}
+				_sock = -1;
+			}
+		}
+
+		socket_t& set_port(uint16_t port) {
+			_port = port; return *this;
+		}
+
+		socket_t& set_addr(const char* ipport) {
+			auto tokens = split(ipport, ':');
+			if (tokens.size() == 1) {
+				_ip = strip(tokens[0]);
+			}
+			else if (tokens.size() >= 2) {
+				_ip = strip(tokens[0]);
+				_port = (uint16_t)(format_t() << strip(tokens[1]));
+			}
+			return *this;
+		}
+
+		socket_t& connect(milliseconds timeout) {
+			if (!_ip.empty() || _port != 0) {
+				
+				this->close();
+				_sock = (int)::socket(AF_INET, SOCK_STREAM, 0);
+				setnonblock();
+
+				for ( auto this_time = high_resolution_clock::now(), last_time = this_time ;
+				  !is_connected() && this_time - last_time <= timeout ;
+					timeout -= duration_cast<milliseconds>(this_time - last_time),
+					last_time = this_time, this_time = high_resolution_clock::now()) {
+					
+					sockaddr_in addr = { 0 };
+					addr.sin_family = AF_INET;
+					addr.sin_port = htons(_port);
+					inet_pton(AF_INET, _ip.c_str(), &addr.sin_addr.s_addr);
+					auto n = ::connect(_sock, (sockaddr*)&addr, sizeof(addr));
+
+					if (n == 0)
+						return *this;
+
+					auto e = WSAGetLastError();
+					switch (e) {
+					case WSAEISCONN:
+						return *this;
+					case WSAEALREADY:
+					case WSAEINPROGRESS:
+					case WSAEWOULDBLOCK:
+					case WSAEINTR: {
+						fd_set r = { 0 };
+						fd_set w = { 0 };
+						fd_set e = { 0 };
+						FD_SET(_sock, &r);
+						FD_SET(_sock, &w);
+						FD_SET(_sock, &e);
+						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
+							(long)duration_cast<microseconds>(timeout).count() % 1000000 };
+						::select(int(_sock + 1), &r, &w, &e, &tv);
+						break;
+					}
+					default: {
+						this->close();
+						_sock = (int)::socket(AF_INET, SOCK_STREAM, 0);
+						setnonblock();
+						sleep_for(min(milliseconds(100), timeout));
+						break;
+					}
+					}
+				}
+			}
+			return *this;
+		}
+
+
+		socket_t& setblock(bool f) {
 #ifdef this_platform_windows
-		void setblock(bool f) {
 			unsigned long ul = (f ? 0 : 1);
-			throw_syserror_if(0 != ::ioctlsocket(res_, FIONBIO, (unsigned long *)&ul));
-		}
+			::ioctlsocket(_sock, FIONBIO, (unsigned long *)&ul);
+			_isblocked = f;
 #endif
+			return *this;
+		}
+
 		int getsockerror() {
 			int err = 0;
 #if defined(this_platform_windows)
@@ -681,377 +927,112 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 #else
 			socklen_t len = sizeof(err);
 #endif
-			throw_syserror_if(0 != ::getsockopt(res_, SOL_SOCKET, SO_ERROR, (char*)&err, &len));
+			::getsockopt(_sock, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
 			return err;
 		}
+
+		bool			_isblocked = true;
+		int				_sock = -1;
+		uint16_t		_port = 0;
+		string			_ip;
 	};
 
-	class socketstream_t  : public socket_t {
-	public:
-		socketstream_t(int fd) : socket_t(fd) {
 
-		}
-		socketstream_t(const string& ip, uint16_t port) {
-			res_ = (int)::socket(AF_INET, SOCK_STREAM, 0);
-			scope_t closefd( [this]() {close();});
-			throw_syserror_if(res_ < 0);
+	class listener_t {
+	public:
+		listener_t(uint16_t port) {
+			_port = port;
 			sockaddr_in addr;
 			addr.sin_family = AF_INET;
 			addr.sin_port = htons(port);
-			throw_syserror_if(1 != ::inet_pton(AF_INET, ip.c_str(), &addr.sin_addr));
-			throw_syserror_if(0 != ::connect(res_, (sockaddr*)&addr, sizeof(addr)));
-			closefd.dismiss();
+			addr.sin_addr.s_addr = INADDR_ANY;
+			_sock = (int)::socket(AF_INET, SOCK_STREAM, 0);
+			unsigned long ul = 1;
+			::ioctlsocket(_sock, FIONBIO, (unsigned long *)&ul);
+			::bind(_sock, (sockaddr*)&addr, sizeof(addr));
+			::listen(_sock, 1024);
 		}
-	public:
-		void writeall(const string& buf) {
-			size_t sendn = 0;
-			while (sendn < buf.size()) {
-				setblock(true);
-				sendn += write(buf.substr(sendn));
-			}	
+		~listener_t() {
+			::closesocket(_sock);
 		}
-		size_t write(const string& buf) {
-			throw_runtimerror_if(res_ < 0);
-			size_t writen = 0;
-			while (true) {
-				if (writen >= buf.size())
-					return writen;
-				int n = ::send(res_, buf.c_str() + writen, int(buf.size() - writen), 0);
-				if (n <= 0) {
-					if (writen > 0)
-						return writen;
-					int ec = getlasterror();
-					switch (ec) {
-					case EINTR:
-					case EAGAIN:
-#if !defined(this_platform_linux)
-					case EWOULDBLOCK:
-#endif
-#ifdef this_platform_windows
-					case WSAEWOULDBLOCK:
-#endif
-						return writen;
-					default:
-						throw_syserror(ec);
-					}
-				}
-				writen += (size_t)n;
-			}
-		}
-		string read(size_t count = 0, bool block = false) {
-			throw_runtimerror_if(res_ < 0);
-			if (count == 0) block = false;
-			setblock(block);
-			string ret;
-			static const size_t buflen = (10 << 10);
-			size_t recved = 0;
-			auto buf = new_unique_array<char>(buflen);
-			while (true) {
-				if (count && recved >= count)
-					return move(ret);
-				int n = ::recv(res_, buf.get(), int(count ? min(buflen, count - recved) : buflen), 0);
-				if (n <= 0) {
-					if (!ret.empty())
-						return move(ret);
-					if (n == 0) {
-						throw_syserror(getsockerror());
-					}
-					int ec = getlasterror();
-					switch (ec) {
-					case EINTR:
-					case EAGAIN:
-#if !defined(this_platform_linux)
-					case EWOULDBLOCK:
-#endif
-#ifdef this_platform_windows
-					case WSAEWOULDBLOCK:
-#endif
-						return move(ret);
-					default:
-						throw_syserror(ec);
-					}
-				}
-				recved += (size_t)n;
-				ret.append(buf.get(), n);
-			}
-		}
-	};
 
+		shared_ptr<socket_t> accept(milliseconds timeout) {
+			for (auto this_time = high_resolution_clock::now(), last_time = this_time;
+				this_time - last_time <= timeout;
+				timeout -= duration_cast<milliseconds>(this_time - last_time),
+				last_time = this_time, this_time = high_resolution_clock::now()) {
+				fd_set r = { 0 }, w = { 0 }, e = { 0 };
+				FD_SET(_sock, &r);
+				FD_SET(_sock, &w);
+				FD_SET(_sock, &e);
+				timeval tv{(long) duration_cast<seconds>(timeout).count(),
+					(long)duration_cast<microseconds>(timeout).count()%1000000 };
+				::select(int(_sock + 1), &r, &w, &e, &tv);
 
-	class listenstream_t  : public socket_t {
-	public:
-		listenstream_t(uint16_t port) {
-			res_ = (int)socket(AF_INET, SOCK_STREAM, 0);
-			throw_runtimerror_if(res_ < 0);
-			scope_t closefd([this]() {close(); });
-			sockaddr_in addr;
-			addr.sin_family = AF_INET;
-			addr.sin_port = htons(port);
-			addr.sin_addr.s_addr = htonl(INADDR_ANY);
-			throw_syserror_if(0 != ::bind(res_, (sockaddr*)&addr, sizeof(addr)));
-			throw_syserror_if(0 != ::listen(res_, 1024));
-			closefd.dismiss();
-		}
-	public:
-		shared_ptr<socketstream_t> accept() {
-			sockaddr_in addr;
-			socklen_t addrlen = sizeof(addr);
-			int n = (int)::accept(res_, (sockaddr*)&addr, &addrlen);
-			if (n <= 0) {
-				int ec = getlasterror();
-				switch (ec) {
-				case EINTR:
-				case EAGAIN:
-#if !defined(this_platform_linux)
-				case EWOULDBLOCK:
-#endif
-#ifdef this_platform_windows
-				case WSAEWOULDBLOCK:
-#endif
-					return nullptr;
-				default:
-					throw_syserror(ec);
+				sockaddr_in addr;
+				socklen_t	addrlen = sizeof(addr);
+				auto n = (int)::accept(_sock, (sockaddr*)&addr, &addrlen);
+				if (n >= 0) {
+					auto sock = new_shared<socket_t>(n);
+					return sock;
 				}
 			}
-			return new_shared<socketstream_t>(n);
+			return nullptr;
 		}
-	};
 
-	template<class hasfd_t>
-	class fdpump_t {
-	public:
-		fdpump_t& push(shared_ptr<hasfd_t> hf, bool r, bool w, bool e, function<void(bool,bool,bool)> callback) {
-			throw_runtimerror_if(!hf);
-			throw_runtimerror_if(hf->getfd() < 0);
-			throw_runtimerror_if(!r && !w && !e);
-			throw_runtimerror_if(!callback);
-			if_lock(pending_mtx_) {
-				pending_store_.emplace(hf,move(tuple<bool,bool,bool, function<void(bool, bool, bool)>>(r,w,e,callback)));
-			}
-			return *this;
-		}
-		fdpump_t& run() {
-			while (true) {
-				fd_set rfds, wfds, efds;
-				FD_ZERO(&rfds);
-				FD_ZERO(&wfds);
-				FD_ZERO(&efds);
-				int maxfd = -1;
-				if_lock(mtx_) {
-					if_lock(pending_mtx_) {
-						for (auto& p : pending_store_) {
-							store_.emplace(move(p));
-						}
-						pending_store_.clear();
-					}
-					if (store_.empty()) {
-						return *this;
-					}
-					for (auto itr = store_.begin(); itr != store_.end();) {
-						if (itr->first->getfd() < 0) {
-							itr = store_.erase(itr);
-							continue;
-						}
-						if (std::get<0>(itr->second)) {
-							itr->first->setblock(false);
-							FD_SET(itr->first->getfd(), &rfds);
-							maxfd = max(maxfd, itr->first->getfd());
-						}
-						if (std::get<1>(itr->second)) {
-							itr->first->setblock(false);
-							FD_SET(itr->first->getfd(), &wfds);
-							maxfd = max(maxfd, itr->first->getfd());
-						}
-						if (std::get<2>(itr->second)) {
-							itr->first->setblock(false);
-							FD_SET(itr->first->getfd(), &efds);
-							maxfd = max(maxfd, itr->first->getfd());
-						}
-						++itr;
-					}
-					if (maxfd < 0)
-						continue;
-					{
-						unique_lock<mutex> ul(pending_mtx_, defer_lock);
-						if (ul.try_lock() && pending_store_.empty()) {
-							if(tv_.tv_usec < 1)
-								tv_.tv_usec = 1;
-							else if (tv_.tv_usec >= 1000000)
-								tv_.tv_usec = 1000000;
-							else
-								tv_.tv_usec <<= 1;
-						}
-						else {
-							tv_.tv_usec = 0;
-						}
-					}
-					timeval tv = tv_;
-					int n = ::select(maxfd + 1, &rfds, &wfds, &efds, &tv);
-					throw_syserror_if(n < 0);
-					if (n > 0) {
-						tv_ = { 0, 0 };
-						for (auto itr = store_.begin(); itr != store_.end();) {
-							bool r = (0 != FD_ISSET(itr->first->getfd(), &rfds));
-							bool w = (0 != FD_ISSET(itr->first->getfd(), &wfds));
-							bool e = (0 != FD_ISSET(itr->first->getfd(), &efds));
-							if (r || w || e) {
-								--n;
-								decltype(itr->second) tmp(move(itr->second));
-								itr = store_.erase(itr);
-								get<3>(tmp)(r, w, e);
-								if (n <= 0)
-									break;
-								continue;
-							}
-							else if (auto s = dynamic_pointer_cast<socket_t>(itr->first)) {
-								if (0 != s->getsockerror()) {
-									decltype(itr->second) tmp(move(itr->second));
-									itr = store_.erase(itr);
-									get<3>(tmp)(r, w, e);
-									continue;
-								}
-							}
-							++itr;
-						}
-					}
-				}
-			}
-			return *this;
-		}
 	private:
-		timeval tv_ = { 0, 0 };
-		mutex mtx_;
-		unordered_map<shared_ptr<hasfd_t>, tuple<bool, bool, bool, function<void(bool, bool, bool)>>> store_;
-		mutex pending_mtx_;
-		unordered_map<shared_ptr<hasfd_t>, tuple<bool, bool, bool, function<void(bool, bool, bool)>>> pending_store_;
-	};
-
-#ifdef this_platform_windows
-	class net_switch_t {
-	public:
-		net_switch_t() { throw_syserror_if(0 != ::WSAStartup(MAKEWORD(1, 1), &wsadata_)); }
-		~net_switch_t() { throw_syserror_if(0 != ::WSACleanup()); }
-	private:
-		WSAData wsadata_;
-	};
-#define net_switch() annoymous_t(net_switch_t);
-#else
-	class net_switch_t {
-
-	};
-#define net_switch()
-#endif
-
-	class transaction_t {
-	public:
-		transaction_t(function<void()> j)
-		:job_(j){
-
-		}
-		~transaction_t() {
-			dismiss();
-		}
-		void dismiss() {
-			while (!dependences_.empty()) {
-				auto x = dependences_.front();
-				dependences_.pop_front();
-				if(x) x->dismiss();
-			}
-			if (job_) {
-				job_ = nullptr;
-			}
-		}
-	public:
-		transaction_t& start() {
-			while (!dependences_.empty()) {
-				auto t = dependences_.front();
-				dependences_.pop_front();
-				decltype(job_) x;
-				x.swap(job_);
-				scope_t dojob([this, &x]() {
-					job_.swap(x);
-				});
-				if (t) {
-					t->start();
-				}
-				else {
-					dojob.dismiss();
-				}
-			}
-			if (job_) {
-				decltype(job_) x;
-				x.swap(job_);
-				x();
-			}
-			return *this;
-		}
-		transaction_t& depends(shared_ptr<transaction_t> t) {
-			dependences_.push_back(t);
-			return *this;
-		}
-	private:
-		function<void()> job_;
-		list<shared_ptr<transaction_t>> dependences_;
+		int		 _sock = -1;
+		uint16_t _port = 0;
 	};
 
 	class thread_pool_t {
 	public:
 		thread_pool_t(size_t count = thread::hardware_concurrency()) {
 			for (size_t x = 0; x < count; ++x) {
-				threads_.emplace_back([this]() {
-					while (!stop_) {
+				_threads.emplace_back([this]() {
+					while (!_stop) {
 						function<void()> job;
-						if_lock(jobs_.mtx_) {
-							if (jobs_.hold_.empty()) {
-								jobs_.cond_.wait(_ul, [this]() {
-									return !jobs_.hold_.empty() || stop_;
+						if_lock(_jobs._mtx) {
+							if (_jobs._hold.empty()) {
+								_jobs._cond.wait_for(__ul,seconds(1), [this]() {
+									return !_jobs._hold.empty() || _stop;
 								});
 								continue;
 							}
-							job.swap(jobs_.hold_.front());
-							jobs_.hold_.pop_front();
+							job.swap(_jobs._hold.front());
+							_jobs._hold.pop_front();
 						}
 						if (job) {
-							job();
+							try {
+								job();
+							}
+							catch (...) {
+
+							}
 						}
 					}
 				});
 			}
 		}
 		~thread_pool_t() {
-			stop_ = true;
-			jobs_.cond_.notify_all();
-			for (auto& t : threads_) {
+			_stop = true;
+			_jobs._cond.notify_all();
+			for (auto& t : _threads) {
 				if (t.joinable())t.join();
 			}
 		}
-	public:
+
 		template<class ft, class... argst>
 		auto push_front( ft&& f, argst&&... args )
 		-> future<typename result_of<ft(argst...)>::type> {
-			using return_t = typename result_of<ft(argst...)>::type;
-			auto job = make_shared<packaged_task<return_t()>>(
-				bind(forward<ft>(f), forward<argst>(args)...));
-			auto ret = job->get_future();
-			if_lock(jobs_.mtx_) {
-				jobs_.hold_.emplace_front([job]() { (*job)(); });
-			}
-			jobs_.cond_.notify_one();
-			return ret;
+			return move(push(true, forward<ft>(f), forward<argst>(args)...));
 		}
 		template<class ft, class... argst>
 		auto push_back(ft&& f, argst&&... args)
 			-> future<typename result_of<ft(argst...)>::type> {
-			using return_t = typename result_of<ft(argst...)>::type;
-			auto job = make_shared<packaged_task<return_t()>>(
-				bind(forward<ft>(f), forward<argst>(args)...));
-			auto ret = job->get_future();
-			if_lock(jobs_.mtx_) {
-				jobs_.hold_.emplace_back([job]() { (*job)(); });
-			}
-			jobs_.cond_.notify_one();
-			return ret;
+			return move(push(false, forward<ft>(f), forward<argst>(args)...));
 		}
+	private:
 		template<class ft, class... argst>
 		auto push(bool putfront, ft&& f, argst&&... args)
 			-> future<typename result_of<ft(argst...)>::type> {
@@ -1059,19 +1040,20 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			auto job = make_shared<packaged_task<return_t()>>(
 				bind(forward<ft>(f), forward<argst>(args)...));
 			auto ret = job->get_future();
-			if_lock(jobs_.mtx_) {
+			if_lock(_jobs._mtx) {
 				if(putfront)
-					jobs_.hold_.emplace_front([job]() { (*job)(); });
+					_jobs._hold.emplace_front([job]() { (*job)(); });
 				else
-					jobs_.hold_.emplace_back([job]() { (*job)(); });
+					_jobs._hold.emplace_back([job]() { (*job)(); });
 			}
-			jobs_.cond_.notify_one();
-			return ret;
+			_jobs._cond.notify_one();
+			return move(ret);
 		}
-	private:
-		bool stop_ = false;
-		shared_t < list<function<void()>>> jobs_;
-		list<thread> threads_;
+
+		bool								_stop = false;
+		shared_t<list<function<void()>>>	_jobs;
+		list<thread>						_threads;
 	};
+
 }
 using namespace this_space;
