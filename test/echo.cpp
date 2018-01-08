@@ -134,10 +134,9 @@ void test_log() {
 	for (size_t i = 0; i < 10; ++i) {
 		pool->push_back([&]() {
 			for (;;) {
-				sleep_for(milliseconds(100));
 				log_debug(l, 123);
 				log_debug(l, 456, 789);
-				log_debug(l, "hello word");
+				log_debug(l, "test var1 " ,123,  " var2 ", 456," var3 ", 64);
 			}
 		});
 	}
