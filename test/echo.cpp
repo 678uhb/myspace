@@ -143,12 +143,110 @@ void test_log() {
 	
 }
 
+void test_middlelayer() {
+
+	WSAData wd;
+	WSAStartup(MAKEWORD(1, 1), &wd);
+	scope(WSACleanup());
+
+	log_t logger;
+
+	struct conn_thread_t {
+
+		conn_thread_t(shared_ptr<socket_t> conn)
+		:_conn(conn){
+			
+		}
+
+		~conn_thread_t() {
+			_conn->close();
+			_write_msgs._cond.notify_all();
+			if (this_thread::get_id() == _read_thread.get_id()) {
+				_read_thread.detach();
+			}
+			else {
+				_read_thread.join();
+			}
+			if (this_thread::get_id() == _write_thread.get_id()) {
+				_write_thread.detach();
+			}
+			else {
+				_write_thread.join();
+			}
+		}
+
+		thread							_read_thread;
+		thread							_write_thread;
+		shared_ptr<socket_t>			_conn;
+		shared_t<deque<string>>			_write_msgs;
+	};
+
+
+	{
+		deque<shared_ptr<listener_t>> listeners;
+		listeners.push_back( new_shared<listener_t>(6001));
+		listeners.push_back( new_shared<listener_t>(6002));
+		listeners.push_back( new_shared<listener_t>(6003));
+		listeners.push_back( new_shared<listener_t>(6004));
+
+		for (;;) {
+			auto sel = new_shared<select_t>();
+			for (auto l : listeners) {
+				sel->add(l);
+			}
+			log_debug(logger, "before accept");
+			sel->detect(hours(1));
+			for (auto l : listeners) {
+				auto conn = l->accept(seconds(1));
+				if (conn) {
+					log_debug(logger, "new conn");
+					auto ct = new_shared<conn_thread_t>(conn);
+
+					ct->_write_thread = thread([ct]() {
+						for (; *ct->_conn;) {
+							string buf;
+							if_lock(ct->_write_msgs._mtx) {
+								if (ct->_write_msgs._hold.empty()) {
+									ct->_write_msgs._cond.wait_for(__ul, hours(1));
+									continue;
+								}
+								buf.swap(ct->_write_msgs._hold.front());
+								ct->_write_msgs._hold.pop_front();
+							}
+							ct->_conn->send(buf, hours(1));
+						}
+					});
+
+					ct->_read_thread = thread([ct]() {
+						string endtoken("abc");
+						while (*ct->_conn) {
+							auto buf = ct->_conn->recv_until(endtoken, hours(1));
+							if (buf.find("quit") != string::npos)
+								break;
+							buf = "\r\n" + strip(buf) + "\r\n";
+							if_lock(ct->_write_msgs._mtx) {
+								ct->_write_msgs._hold.emplace_back(move(buf));
+							}
+							ct->_write_msgs._cond.notify_all();
+							
+						}
+						ct->_conn->close();
+						ct->_write_msgs._cond.notify_all();
+					});
+
+				}
+			}
+		}
+	}
+}
+
 int main() {
 	//test_listen_connect();
 	//test_coroutine();
 	//test_asm();
 	//test_thread_pool();
-	test_log();
+	//test_log();
+	test_middlelayer();
 	system("pause");
 	return 0;
 }

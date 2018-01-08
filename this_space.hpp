@@ -830,6 +830,72 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			return move(string(buf.get(),recvn));
 		}
 
+		string recv_until(const string& delm, chrono::milliseconds timeout) {
+			if (delm.empty())
+				return "";
+			size_t recvn = delm.size();
+			string ret;
+			auto buf = new_unique_array<char>(recvn);
+			for (auto this_time = chrono::system_clock::now(), last_time = this_time;
+				(ret.size() < delm.size() || ret.rfind(delm, ret.size() - delm.size()) == string::npos) && timeout.count() >= 0;
+				last_time = this_time, this_time = chrono::system_clock::now(),
+				timeout -= duration_cast<milliseconds>(this_time - last_time)) {
+				auto n = ::recv(_sock, buf.get(), int(recvn), 0);
+				if (n > 0) {
+					ret.append(buf.get(), n);
+					if (ret.size() >= delm.size()) {
+						auto c = ret.back();
+						size_t I = string::npos;
+						for (size_t i = 0; i < delm.size(); ++i) {
+							if (delm[i] == c) {
+								I = i;
+								break;
+							}
+						}
+						if (I == string::npos) {
+							recvn = delm.size();
+						}
+						else {
+							bool overlapped = true;
+							for (size_t i = ret.size() - I - 1, y = 0; i < ret.size(); ++i, ++y) {
+								if (ret[i] == delm[y]) {
+									overlapped = false;
+									break;
+								}	
+							}
+
+							if (!overlapped) {
+								recvn = delm.size();
+							}
+							else {
+								recvn = delm.size() - I - 1;
+							}
+						}
+					}
+				}
+				else if (n == 0)
+					break;
+				else {
+					auto e = WSAGetLastError();
+					switch (e) {
+					case WSAEINTR:
+					case WSAEWOULDBLOCK: {
+						fd_set r = { 0 };
+						FD_SET(_sock, &r);
+						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
+							(long)duration_cast<microseconds>(timeout).count() % 1000000 };
+						::select(int(_sock + 1), &r, nullptr, nullptr, &tv);
+						break;
+					}
+					default:
+						goto end_mark;
+					}
+				}
+			}
+		end_mark:
+			return move(ret);
+		}
+
 		socket_t& setblock() {
 			return setblock(true);
 		}
@@ -868,7 +934,6 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			}
 		}
 
-	private:
 		void close() {
 			if (_sock >= 0) {
 				setblock(true);
@@ -878,6 +943,9 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 				_sock = -1;
 			}
 		}
+
+	private:
+		
 
 		socket_t& set_port(uint16_t port) {
 			_port = port; return *this;
@@ -1018,9 +1086,36 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			return nullptr;
 		}
 
+		int get_fd() {
+			return _sock;
+		}
+
 	private:
 		int		 _sock = -1;
 		uint16_t _port = 0;
+	};
+
+
+	class select_t {
+	public:
+		template<class type>
+		select_t& add(type x) {
+			_maxfd = max(_maxfd, x->get_fd());
+			FD_SET(x->get_fd(), &_r);
+			return *this;
+		}
+
+		select_t& detect(milliseconds ms) {
+			timeval tv{ duration_cast<seconds>(ms).count(), duration_cast<microseconds>(ms).count()% 1000000 };
+			::select(_maxfd + 1, &_r, &_w, &_e, &tv);
+			return *this;
+		}
+
+	private:
+		int		_maxfd = -1;
+		fd_set _r = { 0 };
+		fd_set _w = { 0 };
+		fd_set _e = { 0 };
 	};
 
 	class thread_pool_t {
