@@ -128,13 +128,28 @@ void test_thread_pool() {
 	}
 }
 
-
+void test_log() {
+	log_t l;
+	auto pool = new_shared<thread_pool_t>();
+	for (size_t i = 0; i < 10; ++i) {
+		pool->push_back([&]() {
+			for (;;) {
+				sleep_for(milliseconds(100));
+				log_debug(l, 123);
+				log_debug(l, 456, 789);
+				log_debug(l, "hello word");
+			}
+		});
+	}
+	
+}
 
 int main() {
 	//test_listen_connect();
-	test_coroutine();
+	//test_coroutine();
 	//test_asm();
 	//test_thread_pool();
+	test_log();
 	system("pause");
 	return 0;
 }

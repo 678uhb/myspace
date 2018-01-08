@@ -152,10 +152,6 @@ namespace this_space {
 #define _annoymous_t(type,line)  __annoymous_t(type,annoymous,line)
 #define annoymous_t(type)   _annoymous_t(type, __LINE__)
 #define scope(f) annoymous_t(scope_t)([&](){f;})
-#define debug(fmt, ...) if( log_t::level() <= log_t::level_t::debug) { log_t::print(log_t::debug, __FILE__,__LINE__, fmt, ##__VA_ARGS__);  };
-#define info(fmt, ...) if( log_t::level() <= log_t::level_t::info) { log_t::print(log_t::info, __FILE__,__LINE__, fmt, ##__VA_ARGS__);  };
-#define warn(fmt, ...) if( log_t::level() <= log_t::level_t::warn) { log_t::print(log_t::warn, __FILE__,__LINE__, fmt, ##__VA_ARGS__);  };
-#define error(fmt, ...) if( log_t::level() <= log_t::level_t::error) { log_t::print(log_t::error, __FILE__,__LINE__, fmt, ##__VA_ARGS__);  };
 #define buildstr(x)	#x
 #define _source_pos(file, line) file ":" buildstr(line)
 #define source_pos	 _source_pos(__FILE__, __LINE__)
@@ -218,8 +214,21 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		}()) {}
 	};
 
-	
 
+	string basename(const string& path) {
+		auto pos = path.find_last_of("\\/");
+		if (pos != string::npos)
+			return move(path.substr(pos + 1));
+		return move(path);
+	}
+	
+	size_t filesize(const string& path) {
+		ifstream ifs(path, ios::in | ios::binary);
+		if (!ifs.is_open())
+			return 0;
+		ifs.seekg(0, ios::end);
+		return ifs.tellg();
+	}
 
 	template<class = void>
 	string& tolower(string& src) { for (auto& c : src) c = std::tolower(c); return src; }
@@ -289,7 +298,7 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 	
 	
 	template<class = void>
-	string strftime(time_t t, const string& fmt = "%F %T") {
+	string time_format(time_t t = time(0), const string& fmt = "%F %T") {
 		auto buf = new_unique_array<char>(128);
 		struct tm _tm;
 #ifdef this_platform_windows
@@ -386,120 +395,149 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		return move(geterrormsg(getlasterror()));
 	}
 
+
 	class log_t {
-		log_t() = delete;
 	public:
-		enum level_t { debug, info, warn, error };
-	public:
-		static level_t level() { return get_static()._lv;}
-		static level_t level(level_t lv) { scope(get_static()._lv = lv); return get_static()._lv; }
-		static void log2console(bool f) { get_static()._log2console = f; }
-		static void log2file(bool f) { get_static()._log2file = f; }
-		static void logdir(const string& path) { get_static()._logdir = path; get_static()._log2file = true; }
-		static void print(level_t lv, const char* file, int line, const char* fmt, ...) {
-			if (!get_static()._log2file && !get_static()._log2console)
-				return;
-			
-			va_list ap;
-			va_start(ap, fmt);
-			string msg(this_space::vformat<1024>(fmt, ap));
-			va_end(ap);
-			if (msg.back() != '\n')
-				msg.append(1, '\n');
-			stringstream ss;
-			switch (lv) {
-			case debug:  ss << "[debug]"; break;
-			case info: ss << "[info]"; break;
-			case warn: ss << "[warn]"; break;
-			case error: ss << "[error]"; break;
-			}
-			ss << "[" << this_space::strftime(time(0)) << "]"
-				<< "[" << this_thread::get_id() << "]"
-				<< "[" << file << ":" << line << "]" << msg;
-
-			if_lock(get_static()._logqueue._mtx) {
-				if (get_static()._logqueue._hold.size() > 10000) {
-					size_t x = 0;
-					while (get_static()._logqueue._hold.size() > 10000) {
-						get_static()._logqueue._hold.pop_front();
-						++x;
-					}
-					stringstream ss;
-					ss << "[warn][" << this_space::strftime(time(0)) << "][" << this_thread::get_id()
-						<< "][" source_pos "]" << format("too much log to sink, truncate %u logs", x);
-					get_static()._logqueue._hold.emplace_back(move(ss.str()));
-				}
-				get_static()._logqueue._hold.emplace_back(move(ss.str()));
-			}
-			get_static()._logqueue._cond.notify_one();
-
-			call_once(get_static()._onceflag, []() {
-				thread([]() {
-					ofstream ofs(get_static()._logdir + "log", ios::out|ios::app);
-					while (true) {
-						try {
-							list<string> q;
-							if_lock(get_static()._logqueue._mtx) {
-								if (get_static()._logqueue._hold.empty()) {
-									get_static()._logqueue._cond.wait(__ul, []() { return !get_static()._logqueue._hold.empty(); });
-									continue;
-								}
-								q.swap(get_static()._logqueue._hold);
-							}
-							while (!q.empty()) {
-								scope(q.pop_front());
-								if (get_static()._log2console) {
-									cout << q.front();
-								}
-								if (!get_static()._log2file)
-									continue;
-								auto size = ofs.tellp();
-								if (size > (100 << 20)) {
-									ofs.close();
-									for (int i = 100; i >= 0; --i) {
-										stringstream src;
-										stringstream dst;
-										if (i == 0) {
-											src << get_static()._logdir << "log";
-										}
-										else {
-											src << get_static()._logdir << "log." << i;
-										}
-										dst << get_static()._logdir << "log." << i + 1;
-										::remove(dst.str().c_str());
-										::rename(src.str().c_str(), dst.str().c_str());
-									}
-									ofs.open(get_static()._logdir + "log",ios::out | ios::trunc);
-								}
-								ofs.write(q.front().c_str(), q.front().size());
-								if (q.size() < 100)
-									ofs.flush();
-							}
-						}
-						catch (...) {
-
-						}
-					}
-				}).detach();
-			});
-		}
-	private:
-		class log_static_t {
-		public:
-			level_t					_lv = debug;
-			bool					_log2console = true;
-			bool					_log2file = false;
-			string					_logdir;
-			once_flag				_onceflag;
-			shared_t<list<string>>	_logqueue;
+		enum level_t {
+			lv_debug = 0, 
+			lv_info,
+			lv_warn,
+			lv_error
 		};
-	private:
-		static log_static_t& get_static() {
-			static log_static_t static_;
-			return static_;
+
+		template<class... types>
+		log_t& debug(const char* file, int line, const types&... args) {
+			if(_lv >= lv_debug)
+				print(lv_debug, file, line, args...);
+			return *this;
 		}
+
+		template<class... types>
+		log_t& info(const char* file, int line, const types&... args) {
+			if (_lv >= lv_info)
+				print(lv_info, file, line, args);
+			return *this;
+		}
+
+		template<class... types>
+		log_t& warn(const char* file, int line, const types&... args) {
+			if (_lv >= lv_warn)
+				print(lv_warn, file, line, args);
+			return *this;
+		}
+
+		template<class... types>
+		log_t& error(const char* file, int line, const types&... args) {
+			if(_lv >= lv_error)
+				print(lv_error, file, line, args);
+			return *this;
+		}
+
+		log_t& set_level(level_t lv) { 
+			_lv = lv;
+			return *this;
+		}
+		
+		level_t get_level() {
+			return _lv;
+		}
+		
+		log_t& set_log2console(bool f) {
+			_log2console = f;
+			return *this;
+		}
+
+		log_t& set_log2file(bool f) {
+			_log2file = f;
+			return *this;
+		}
+		
+		log_t& set_logfile(const string& path) { 
+			this->_logfile = path;
+			return *this;
+		}
+	
+	private:
+
+		template<class... types>
+		log_t& print(level_t lv, const char* file, int line, const types&... args) {
+			
+			if_lock(_mtx) {
+
+				auto this_time = high_resolution_clock::now();
+				scope(_lasttime = this_time);
+
+				stringstream ss;
+				ss << "[" << time_format(time(0), "%H:%M:%S");
+				ss << "," << duration_cast<milliseconds>(this_time - _lasttime).count() << "]";
+				switch (lv) {
+				case lv_debug: ss << "[debug]"; break;
+				case lv_info: ss << "[info]"; break;
+				case lv_warn: ss << "[warn]"; break;
+				case lv_error: ss << "[error]"; break;
+				}
+				ss << "[" << this_thread::get_id() << "]";
+				ss << "[" << basename(file) << ":" << line << "]";
+
+				_print(ss, args...);
+				string log(move(ss.str()));
+
+				if (!log.empty()) {
+					if (log.back() != '\n')
+						log.append(1, '\n');
+					if (_log2console) {
+						cout << log;
+						cout.flush();
+					}
+					if (_log2file && !_logfile.empty()) {
+						ofstream ofs(_logfile, ios::out | ios::binary | ios::app);
+						if (!ofs.is_open()) {
+							ofs.open(_logfile, ios::out | ios::binary | ios::trunc);
+							ofs.close();
+							ofs.open(_logfile, ios::out | ios::binary | ios::app);
+						}
+						if (ofs.is_open()) {
+							if (filesize(_logfile) >= (100 << 20)) {
+								ofs.open(_logfile, ios::out | ios::binary | ios::trunc);
+								ofs.close();
+								ofs.open(_logfile, ios::out | ios::binary | ios::app);
+							}
+							if(ofs.is_open())
+								ofs.write(log.c_str(), log.size()).flush();
+						}	
+					}
+				}
+			}
+			return *this;
+		}
+
+		template<class type, class... types>
+		log_t& _print(stringstream& ss, const type& arg, const types&... args) {
+			ss << arg;
+			return _print(ss, args...);
+		}
+
+		log_t& _print(stringstream&) {
+			return *this;
+		}
+
+		mutex								_mtx;
+		bool								_log2console = true;
+		bool								_log2file = false;
+		level_t								_lv = lv_debug;
+		string								_logfile;
+		once_flag							_onceflag;
+		shared_t<list<string>>				_logqueue;
+		high_resolution_clock::time_point	_lasttime = high_resolution_clock::now();
 	};
-	template<class = void>
+
+#define log_debug(log, ...) log.debug(__FILE__,__LINE__, ##__VA_ARGS__)
+#define log_info(log, ...)	log.info(__FILE__,__LINE__, ##__VA_ARGS__)
+#define log_warn(log, ...)	log.warn(__FILE__,__LINE__, ##__VA_ARGS__)
+#define log_error(log, ...)	log.error(__FILE__,__LINE__, ##__VA_ARGS__)
+
+
+
 	void print_exception(exception& e, string& buf) {
 		try {
 			buf.append(e.what());
@@ -1055,12 +1093,14 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		list<thread>						_threads;
 	};
 
+//////////////////////////////////////////////////////////////  windows
+#ifdef this_platform_windows
+
 	namespace this_coroutine	{
 		LPVOID get_id() {
 			return ::GetCurrentFiber();
 		}
 	}
-
 
 	template<class type>
 	class coroutine_t {
@@ -1158,6 +1198,9 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		LPVOID										_caller = nullptr;
 		function<void(coroutine_t<type>&)>			_callee_fn;
 	};
+
+
+#endif
 
 }
 using namespace this_space;
