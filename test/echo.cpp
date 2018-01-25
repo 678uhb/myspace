@@ -192,12 +192,12 @@ void test_middlelayer() {
 		for (;;) {
 			auto sel = new_shared<select_t>();
 			for (auto l : listeners) {
-				sel->add(l);
+				sel->push(l);
 			}
 			log_debug(logger, "before accept");
-			sel->detect(hours(1));
+			sel->wait(hours(1));
 			for (auto l : listeners) {
-				auto conn = l->accept(seconds(1));
+				auto conn = l->accept(milliseconds(1));
 				if (conn) {
 					log_debug(logger, "new conn");
 					auto ct = new_shared<conn_thread_t>(conn);
@@ -240,13 +240,27 @@ void test_middlelayer() {
 	}
 }
 
+
+void test()
+{
+	string s1, s2;
+	s2 = s1 = "123";
+	s1.append(1, 0);
+	s2.append(1, 0);
+	s1.append("321");
+	s2.append("321");
+	cout << s1.size() << endl;
+	cout << (s1 == s2) << endl;
+}
+
 int main() {
 	//test_listen_connect();
 	//test_coroutine();
 	//test_asm();
 	//test_thread_pool();
 	//test_log();
-	test_middlelayer();
+	//test_middlelayer();
+	test();
 	system("pause");
 	return 0;
 }

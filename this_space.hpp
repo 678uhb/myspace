@@ -21,8 +21,8 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#ifdef NOMINMAX
-#undef  NOMINMAX
+#ifndef NOMINMAX
+#define  NOMINMAX
 #endif
 #include <Windows.h>
 #include <WinSock2.h>
@@ -50,6 +50,7 @@
 #include <cctype>
 #include <csetjmp>
 //cpp headers
+#include <algorithm>
 #include <bitset>
 #include <chrono>
 #include <condition_variable>
@@ -711,6 +712,44 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		stringstream _ss;
 	};
 
+	class select_t {
+	public:
+		enum detect_type_t {
+			detect_read = 1,
+			detect_write = 1 << 1,
+			detect_exception = 1 << 2,
+		};
+
+		template<class type>
+		select_t& push(type x, detect_type_t dt = detect_read) {
+			_maxfd = max(_maxfd, x->get_fd());
+			if (dt & detect_read) FD_SET(x->get_fd(), &_r);
+			if (dt & detect_write) FD_SET(x->get_fd(), &_w);
+			if (dt & detect_exception) FD_SET(x->get_fd(), &_e);
+			return *this;
+		}
+
+		select_t& wait(high_resolution_clock::duration duration) {
+			timeval tv{ duration_cast<seconds>(duration).count(), duration_cast<microseconds>(duration).count() % 1000000 };
+			::select(_maxfd + 1, &_r, &_w, &_e, &tv);
+			this->reset();
+			return *this;
+		}
+	private:
+		select_t& reset() {
+			FD_ZERO(&_r);
+			FD_ZERO(&_w);
+			FD_ZERO(&_e);
+			_maxfd = -1;
+			return *this;
+		}
+	private:
+		int		_maxfd = -1;
+		fd_set _r = { 0 };
+		fd_set _w = { 0 };
+		fd_set _e = { 0 };
+	};
+
 	class socket_t {
 	public:
 		socket_t(int sock) {
@@ -730,11 +769,12 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			close();
 		}
 
-		size_t send(const string& data, milliseconds timeout) {
+		size_t send(const string& data, high_resolution_clock::duration timeout) {
 			size_t sendn = 0;
-			for (auto this_time = chrono::system_clock::now(), last_time = this_time;
-				sendn < data.size() && (timeout -= duration_cast<milliseconds>(this_time - last_time), timeout.count() >= 0);
-				last_time = this_time, this_time = chrono::system_clock::now()) {
+			for (auto this_time = high_resolution_clock::now() , begin_time = this_time;
+				sendn < data.size()  && this_time - begin_time <= timeout
+				;this_time = high_resolution_clock::now())
+			{
 				auto n = ::send(_sock, data.c_str() + sendn, int(data.size() - sendn), 0);
 				if (n > 0)
 					sendn += n;
@@ -742,32 +782,26 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 					break;
 				else {
 					auto e = WSAGetLastError();
-					switch (e) {
-					case WSAEWOULDBLOCK:
-					case WSAEINTR:
-					case WSAEINPROGRESS: {
-						fd_set w = { 0 };
-						FD_SET(_sock, &w);
-						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
-							(long)(duration_cast<microseconds>(timeout).count() % 1000000) };
-						::select(int(_sock + 1), nullptr, &w, nullptr, &tv);
+					if (e == WSAEWOULDBLOCK | e == WSAEINTR | e == WSAEINPROGRESS) {
+						auto sel = new_shared<select_t>();
+						sel->push(this, select_t::detect_write);
+						sel->wait(timeout - (this_time - begin_time));
 						continue;
 					}	
-					default:
-						break;
-					}
+					break;
 				}
 			}
 			return sendn;
 		}
 
-		string recv(chrono::milliseconds timeout) {
+		string recv(high_resolution_clock::duration timeout) {
 			string data;
 			size_t buflen = 4096;
 			auto buf = new_unique_array<char>(buflen);
-			for (auto this_time = chrono::system_clock::now(), last_time = this_time;
-				timeout -= duration_cast<milliseconds>(this_time - last_time), timeout.count() >= 0;
-				last_time = this_time, this_time = chrono::system_clock::now()) {
+			for (auto begin_time = high_resolution_clock::now(), this_time = begin_time;
+				this_time - begin_time <= timeout;
+				this_time = high_resolution_clock::now()) 
+			{
 				auto n = ::recv(_sock, buf.get(), (int)buflen, 0);
 				if (n > 0)
 					data.append(buf.get(), n);
@@ -775,34 +809,28 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 					break;
 				else {
 					auto e = WSAGetLastError();
-					switch (e) {
-					case WSAEINTR:
-					case WSAEWOULDBLOCK: {
-						fd_set r = { 0 };
-						FD_SET(_sock, &r);
-						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
-							(long)duration_cast<microseconds>(timeout).count() % 1000000 };
-						::select(int(_sock + 1), &r, nullptr, nullptr, &tv);
-						break;
+					if (e == WSAEWOULDBLOCK | e == WSAEINTR | e == WSAEINPROGRESS) 
+					{
+						auto sel = new_shared<select_t>();
+						sel->push(this);
+						sel->wait(timeout - (this_time - begin_time));
+						continue;
 					}
-					default:
-						return move(data);
-					}
-					
+					break;
 				}
 			}
 			return move(data);
 		}
 
-		string recv(size_t len, chrono::milliseconds timeout) {
+		string recv(size_t len, high_resolution_clock::duration timeout) {
 			if (len == 0)
 				return "";
 			size_t recvn = 0;
 			auto buf = new_unique_array<char>(len);
-			for (auto this_time = chrono::system_clock::now(), last_time = this_time;
-				recvn < len && timeout.count() >= 0;
-				last_time = this_time, this_time = chrono::system_clock::now(),
-				timeout -= duration_cast<milliseconds>(this_time - last_time)) {
+			for (auto this_time = high_resolution_clock::now(), begin_time = this_time;
+				recvn < len && this_time - begin_time <= timeout;
+				this_time = high_resolution_clock::now()) 
+			{
 				auto n = ::recv(_sock, buf.get() + recvn, int(len - recvn), 0);
 				if (n > 0) {
 					recvn += n;
@@ -811,88 +839,61 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 					break;
 				else {
 					auto e = WSAGetLastError();
-					switch (e) {
-					case WSAEINTR:
-					case WSAEWOULDBLOCK: {
-						fd_set r = { 0 };
-						FD_SET(_sock, &r);
-						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
-							(long)duration_cast<microseconds>(timeout).count() % 1000000 };
-						::select(int(_sock + 1), &r, nullptr, nullptr, &tv);
-						break;
+					if (e == WSAEWOULDBLOCK | e == WSAEINTR | e == WSAEINPROGRESS)
+					{
+						auto sel = new_shared<select_t>();
+						sel->push(this);
+						sel->wait(timeout - (this_time - begin_time));
+						continue;
 					}
-					default:
-						goto end_mark;
-					}
+					break;
 				}
 			}
-		end_mark:
 			return move(string(buf.get(),recvn));
 		}
 
-		string recv_until(const string& delm, chrono::milliseconds timeout) {
+		string recv_until(const string& delm, high_resolution_clock::duration timeout) 
+		{
 			if (delm.empty())
-				return "";
+				return move(recv(timeout));
+			size_t matched = 0;
 			size_t recvn = delm.size();
 			string ret;
 			auto buf = new_unique_array<char>(recvn);
-			for (auto this_time = chrono::system_clock::now(), last_time = this_time;
-				(ret.size() < delm.size() || ret.rfind(delm, ret.size() - delm.size()) == string::npos) && timeout.count() >= 0;
-				last_time = this_time, this_time = chrono::system_clock::now(),
-				timeout -= duration_cast<milliseconds>(this_time - last_time)) {
+			for (auto this_time = system_clock::now(), begin_time = this_time;
+				(ret.size() < delm.size() || ret.rfind(delm, ret.size() - delm.size()) == ret.npos)
+				&& this_time - begin_time <= timeout;
+				this_time = system_clock::now()) 
+			{
 				auto n = ::recv(_sock, buf.get(), int(recvn), 0);
-				if (n > 0) {
-					ret.append(buf.get(), n);
-					if (ret.size() >= delm.size()) {
-						auto c = ret.back();
-						size_t I = string::npos;
-						for (size_t i = 0; i < delm.size(); ++i) {
-							if (delm[i] == c) {
-								I = i;
-								break;
-							}
-						}
-						if (I == string::npos) {
-							recvn = delm.size();
-						}
-						else {
-							bool overlapped = true;
-							for (size_t i = ret.size() - I - 1, y = 0; i < ret.size(); ++i, ++y) {
-								if (ret[i] == delm[y]) {
-									overlapped = false;
-									break;
-								}	
-							}
-
-							if (!overlapped) {
-								recvn = delm.size();
-							}
-							else {
-								recvn = delm.size() - I - 1;
-							}
-						}
-					}
-				}
-				else if (n == 0)
+				
+				if (n == 0)
 					break;
-				else {
+
+				if( n < 0) {
 					auto e = WSAGetLastError();
-					switch (e) {
-					case WSAEINTR:
-					case WSAEWOULDBLOCK: {
-						fd_set r = { 0 };
-						FD_SET(_sock, &r);
-						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
-							(long)duration_cast<microseconds>(timeout).count() % 1000000 };
-						::select(int(_sock + 1), &r, nullptr, nullptr, &tv);
-						break;
+					if (e == WSAEWOULDBLOCK | e == WSAEINTR | e == WSAEINPROGRESS)
+					{
+						auto sel = new_shared<select_t>();
+						sel->push(this);
+						sel->wait(timeout - (this_time - begin_time));
+						continue;
 					}
-					default:
-						goto end_mark;
+					break;
+				}
+
+				ret.append(buf.get(), n);
+				size_t maxmatchn = std::min(delm.size(), ret.size());
+				
+				for (;;)
+				{
+					if (ret.compare(ret.size() - maxmatchn, maxmatchn, delm, maxmatchn) == 0)
+					{
+						recvn = delm.size() - maxmatchn;
+						break;
 					}
 				}
 			}
-		end_mark:
 			return move(ret);
 		}
 
@@ -900,17 +901,20 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			return setblock(true);
 		}
 
-
 		socket_t& setnonblock() {
 			return this->setblock(false);
+		}
+
+		bool is_blocked() {
+			return _isblocked;
 		}
 
 		operator bool() {
 			return is_connected();
 		}
 
-		bool is_blocked() {
-			return _isblocked;
+		int get_fd() {
+			return _sock;
 		}
 
 		bool is_connected() {
@@ -1096,27 +1100,6 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 	};
 
 
-	class select_t {
-	public:
-		template<class type>
-		select_t& add(type x) {
-			_maxfd = max(_maxfd, x->get_fd());
-			FD_SET(x->get_fd(), &_r);
-			return *this;
-		}
-
-		select_t& detect(milliseconds ms) {
-			timeval tv{ duration_cast<seconds>(ms).count(), duration_cast<microseconds>(ms).count()% 1000000 };
-			::select(_maxfd + 1, &_r, &_w, &_e, &tv);
-			return *this;
-		}
-
-	private:
-		int		_maxfd = -1;
-		fd_set _r = { 0 };
-		fd_set _w = { 0 };
-		fd_set _e = { 0 };
-	};
 
 	class thread_pool_t {
 	public:
