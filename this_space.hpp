@@ -757,11 +757,11 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		}
 
 
-		socket_t(const string& addr, milliseconds timeout) {
+		socket_t(const string& addr, high_resolution_clock::duration timeout) {
 			set_addr(addr.c_str()).connect(timeout);
 		}
 
-		socket_t(const string& addr, uint16_t port, milliseconds timeout) {
+		socket_t(const string& addr, uint16_t port, high_resolution_clock::duration timeout) {
 			set_addr(addr.c_str()).set_port(port).connect(timeout);
 		}
 
@@ -883,16 +883,16 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 				}
 
 				ret.append(buf.get(), n);
-				size_t maxmatchn = std::min(delm.size(), ret.size());
-				
-				for (;;)
+				recvn = 0;
+				for (size_t maxmatchn = std::min(delm.size(), ret.size()); maxmatchn; --maxmatchn)
 				{
-					if (ret.compare(ret.size() - maxmatchn, maxmatchn, delm, maxmatchn) == 0)
+					if (ret.compare(ret.size() - maxmatchn, maxmatchn, delm, 0,maxmatchn) == 0)
 					{
 						recvn = delm.size() - maxmatchn;
 						break;
 					}
 				}
+				if (!recvn) recvn = delm.size();
 			}
 			return move(ret);
 		}
@@ -942,7 +942,7 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			if (_sock >= 0) {
 				setblock(true);
 				while (WSAEWOULDBLOCK == ::closesocket(_sock)) {
-
+					this_thread::sleep_for(milliseconds(100));
 				}
 				_sock = -1;
 			}
@@ -967,17 +967,16 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			return *this;
 		}
 
-		socket_t& connect(milliseconds timeout) {
+		socket_t& connect(high_resolution_clock::duration timeout) {
 			if (!_ip.empty() || _port != 0) {
 				
 				this->close();
 				_sock = (int)::socket(AF_INET, SOCK_STREAM, 0);
 				setnonblock();
 
-				for ( auto this_time = high_resolution_clock::now(), last_time = this_time ;
-				  !is_connected() && this_time - last_time <= timeout ;
-					timeout -= duration_cast<milliseconds>(this_time - last_time),
-					last_time = this_time, this_time = high_resolution_clock::now()) {
+				for ( auto this_time = high_resolution_clock::now(), begin_time = this_time ;
+				  !is_connected() && this_time - begin_time <= timeout ;
+					this_time = high_resolution_clock::now()) {
 					
 					sockaddr_in addr = { 0 };
 					addr.sin_family = AF_INET;
@@ -996,22 +995,16 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 					case WSAEINPROGRESS:
 					case WSAEWOULDBLOCK:
 					case WSAEINTR: {
-						fd_set r = { 0 };
-						fd_set w = { 0 };
-						fd_set e = { 0 };
-						FD_SET(_sock, &r);
-						FD_SET(_sock, &w);
-						FD_SET(_sock, &e);
-						timeval tv{ (long)duration_cast<seconds>(timeout).count(),
-							(long)duration_cast<microseconds>(timeout).count() % 1000000 };
-						::select(int(_sock + 1), &r, &w, &e, &tv);
+						auto sel = new_shared<select_t>();
+						sel->push(this);
+						sel->wait(timeout - (this_time - begin_time));
 						break;
 					}
 					default: {
 						this->close();
 						_sock = (int)::socket(AF_INET, SOCK_STREAM, 0);
 						setnonblock();
-						sleep_for(min(milliseconds(100), timeout));
+						this_thread::sleep_for(std::min(milliseconds(100), duration_cast<milliseconds>(timeout - (this_time - begin_time))));
 						break;
 					}
 					}
@@ -1066,19 +1059,12 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			::closesocket(_sock);
 		}
 
-		shared_ptr<socket_t> accept(milliseconds timeout) {
-			for (auto this_time = high_resolution_clock::now(), last_time = this_time;
-				this_time - last_time <= timeout;
-				timeout -= duration_cast<milliseconds>(this_time - last_time),
-				last_time = this_time, this_time = high_resolution_clock::now()) {
-				fd_set r = { 0 }, w = { 0 }, e = { 0 };
-				FD_SET(_sock, &r);
-				FD_SET(_sock, &w);
-				FD_SET(_sock, &e);
-				timeval tv{(long) duration_cast<seconds>(timeout).count(),
-					(long)duration_cast<microseconds>(timeout).count()%1000000 };
-				::select(int(_sock + 1), &r, &w, &e, &tv);
-
+		shared_ptr<socket_t> accept(high_resolution_clock::duration timeout)
+		{
+			for (auto this_time = high_resolution_clock::now(), begin_time = this_time;
+				this_time - begin_time <= timeout;
+				this_time = high_resolution_clock::now()) 
+			{	
 				sockaddr_in addr;
 				socklen_t	addrlen = sizeof(addr);
 				auto n = (int)::accept(_sock, (sockaddr*)&addr, &addrlen);
@@ -1086,6 +1072,10 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 					auto sock = new_shared<socket_t>(n);
 					return sock;
 				}
+
+				auto sel = new_shared<select_t>();
+				sel->push(this);
+				sel->wait(timeout - (this_time - begin_time));
 			}
 			return nullptr;
 		}

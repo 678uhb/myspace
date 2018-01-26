@@ -2,9 +2,6 @@
 
 int test_listen_connect() {
 	
-	WSAData wd;
-	WSAStartup(MAKEWORD(1, 1), &wd);
-	scope(WSACleanup());
 
 	list<thread> threads;
 
@@ -145,9 +142,6 @@ void test_log() {
 
 void test_middlelayer() {
 
-	WSAData wd;
-	WSAStartup(MAKEWORD(1, 1), &wd);
-	scope(WSACleanup());
 
 	log_t logger;
 
@@ -253,14 +247,46 @@ void test()
 	cout << (s1 == s2) << endl;
 }
 
+void test_recv_until()
+{
+
+	thread([] {
+		auto l = new_shared<listener_t>(8888);
+		for (;;)
+		{
+			auto conn = l->accept(seconds(3));
+			if (!conn)
+				continue;
+			thread([conn]() {
+				for (;;){
+					auto buf = conn->recv_until("aabbaac", seconds(10));
+					cout << buf << endl;
+				}
+			}).detach();
+		}
+	}).detach();
+
+	auto c = new_shared<socket_t>("127.0.0.1:8888",seconds(10));
+	for (;;)
+	{
+		c->send("", seconds(2));
+		this_thread::sleep_for(milliseconds(100));
+	}
+}
+
 int main() {
+
+	WSAData wd;
+	WSAStartup(MAKEWORD(1, 1), &wd);
+	scope(WSACleanup());
 	//test_listen_connect();
 	//test_coroutine();
 	//test_asm();
 	//test_thread_pool();
 	//test_log();
 	//test_middlelayer();
-	test();
+	//test();
+	test_recv_until();
 	system("pause");
 	return 0;
 }
