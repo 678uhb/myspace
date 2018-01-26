@@ -157,11 +157,11 @@ namespace this_space {
 #define _source_pos(file, line) file ":" buildstr(line)
 #define source_pos	 _source_pos(__FILE__, __LINE__)
 #define throw_syserror(ec) do { \
-    throw_e(syserror_t(__FILE__,__LINE__,ec, geterrormsg(ec)));  \
+    throw_e(syserror_t(__FILE__,__LINE__,ec, get_error_msg(ec)));  \
 } while(0)
 #define throw_syserror_if(x) if((x)) do { \
 	auto ec = getlasterror();  \
-    throw_e(syserror_t(__FILE__,__LINE__,ec, geterrormsg(ec)));  \
+    throw_e(syserror_t(__FILE__,__LINE__,ec, get_error_msg(ec)));  \
 } while(0)
 	
 
@@ -324,8 +324,25 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		cond_t _cond;
 	};
 
-	template<class = void>
-	int getlasterror() {
+	enum {
+#ifdef this_platform_windows
+		err_wouldblock = WSAEWOULDBLOCK,
+		//err_again = EAGAIN,
+		err_inprogress = WSAEINPROGRESS,
+		err_intr	= WSAEINTR,
+		err_already = WSAEALREADY,
+		err_isconn = WSAEISCONN
+#else
+		err_wouldblock = EWOULDBLOCK,
+		//err_again	= EAGAIN,
+		err_inprogress = EINPROGRESS,
+		err_intr	= EINTR,
+		err_already = EALREADY,
+		err_isconn = EISCONN,
+#endif
+	};
+
+	int get_last_net_error() {
 #ifdef this_platform_windows
 		int ec = ::WSAGetLastError();
 		if (ec) return ec;
@@ -335,7 +352,7 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 #endif
 	}
 	template<class  = void>
-	string geterrormsg(int ec) {
+	string get_error_msg(int ec) {
 #ifdef this_platform_windows
 		LPVOID buf = nullptr;
 		scope(::LocalFree(buf));
@@ -391,11 +408,6 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		return move(ss.str());
 #endif
 	}
-	template<class = void>
-	string getlasterrormsg() {
-		return move(geterrormsg(getlasterror()));
-	}
-
 
 	class log_t {
 	public:
@@ -416,21 +428,21 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		template<class... types>
 		log_t& info(const char* file, int line, const types&... args) {
 			if (_lv >= lv_info)
-				print(lv_info, file, line, args);
+				print(lv_info, file, line, args...);
 			return *this;
 		}
 
 		template<class... types>
 		log_t& warn(const char* file, int line, const types&... args) {
 			if (_lv >= lv_warn)
-				print(lv_warn, file, line, args);
+				print(lv_warn, file, line, args...);
 			return *this;
 		}
 
 		template<class... types>
 		log_t& error(const char* file, int line, const types&... args) {
 			if(_lv >= lv_error)
-				print(lv_error, file, line, args);
+				print(lv_error, file, line, args...);
 			return *this;
 		}
 
@@ -538,7 +550,7 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 #define log_error(log, ...)	log.error(__FILE__,__LINE__, ##__VA_ARGS__)
 
 
-
+/*
 	void print_exception(exception& e, string& buf) {
 		try {
 			buf.append(e.what());
@@ -567,7 +579,9 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			buf.append("unknown exception|");
 		}
 		warn("%s", buf.c_str());
-	}
+	}*/
+
+
 	class config_t {
 	public:
 		config_t(const string& path) {
@@ -648,50 +662,6 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 	protected:
 		type_t res_;
 	};
-	template<class type_t>
-	resource_t<type_t>::~resource_t() {
-
-	}
-
-	class fd_t : public resource_t<int> {
-	public:
-		fd_t(int fd = -1)
-			:resource_t<int>(fd) {}
-		~fd_t() {
-			close();
-		}
-	public:
-		virtual int& get() {
-			return res_;
-		}
-		int getfd() {
-			return res_;
-		}
-		virtual void close() {
-			if (res_ >= 0)
-#ifdef this_platform_windows
-				::_close(res_);
-#else
-				::close(res_);
-#endif
-			res_ = -1;
-		}
-#ifndef this_platform_windows
-		void setblock(bool f) {
-			auto flag = ::fcntl(res_, F_GETFL, 0);
-			throw_syserror_if(flag < 0);
-
-			if (f) {
-				if (flag & O_NONBLOCK)
-					throw_syserror_if(0 != ::fcntl(res_, F_SETFL, (flag & ~O_NONBLOCK)));
-			}
-			else {
-				if (!(flag & O_NONBLOCK))
-					throw_syserror_if(0 != ::fcntl(res_, F_SETFL, flag | O_NONBLOCK));
-			}
-		}
-#endif
-	};
 
 	class format_t {
 	public:
@@ -712,6 +682,28 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		stringstream _ss;
 	};
 
+
+	void set_block(int fd, bool f) {
+#ifdef this_platform_windows
+		unsigned long ul = f ? 1 : 0;
+		::ioctlsocket(fd, FIONBIO, (unsigned long *)&ul);
+#else
+		auto flag = fcntl(fd, F_GETFL, 0);
+		if (f) flag |= O_NONBLOCK;
+		else flag = flag & ~O_NONBLOCK;
+		fcntl(fd, F_SETFL, flag);
+#endif
+	}
+
+	void close_socket(int sock) {
+#ifdef this_platform_windows
+		::closesocket(sock);
+#else
+		::close(sock);
+#endif
+	}
+
+
 	class select_t {
 	public:
 		enum detect_type_t {
@@ -719,6 +711,10 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			detect_write = 1 << 1,
 			detect_exception = 1 << 2,
 		};
+
+		select_t() {
+			this->reset();
+		}
 
 		template<class type>
 		select_t& push(type x, detect_type_t dt = detect_read) {
@@ -745,10 +741,12 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		}
 	private:
 		int		_maxfd = -1;
-		fd_set _r = { 0 };
-		fd_set _w = { 0 };
-		fd_set _e = { 0 };
+		fd_set _r;
+		fd_set _w;
+		fd_set _e;
 	};
+
+
 
 	class socket_t {
 	public:
@@ -781,8 +779,9 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 				else if (n == 0)
 					break;
 				else {
-					auto e = WSAGetLastError();
-					if (e == WSAEWOULDBLOCK | e == WSAEINTR | e == WSAEINPROGRESS) {
+					auto e = get_last_net_error();
+					if (e == err_wouldblock || e == err_intr || e == err_inprogress)
+					{
 						auto sel = new_shared<select_t>();
 						sel->push(this, select_t::detect_write);
 						sel->wait(timeout - (this_time - begin_time));
@@ -808,8 +807,8 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 				else if (n == 0)
 					break;
 				else {
-					auto e = WSAGetLastError();
-					if (e == WSAEWOULDBLOCK | e == WSAEINTR | e == WSAEINPROGRESS) 
+					auto e = get_last_net_error();
+					if (e == err_wouldblock || e == err_intr || e == err_inprogress)
 					{
 						auto sel = new_shared<select_t>();
 						sel->push(this);
@@ -838,8 +837,8 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 				else if (n == 0)
 					break;
 				else {
-					auto e = WSAGetLastError();
-					if (e == WSAEWOULDBLOCK | e == WSAEINTR | e == WSAEINPROGRESS)
+					auto e = get_last_net_error();
+					if (e == err_wouldblock  || e == err_intr || e == err_inprogress)
 					{
 						auto sel = new_shared<select_t>();
 						sel->push(this);
@@ -856,7 +855,6 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		{
 			if (delm.empty())
 				return move(recv(timeout));
-			size_t matched = 0;
 			size_t recvn = delm.size();
 			string ret;
 			auto buf = new_unique_array<char>(recvn);
@@ -871,8 +869,8 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 					break;
 
 				if( n < 0) {
-					auto e = WSAGetLastError();
-					if (e == WSAEWOULDBLOCK | e == WSAEINTR | e == WSAEINPROGRESS)
+					auto e = get_last_net_error();
+					if (e == err_wouldblock || e == err_intr || e == err_inprogress)
 					{
 						auto sel = new_shared<select_t>();
 						sel->push(this);
@@ -926,12 +924,13 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 				return false;
 			if (n > 0)
 				return true;
-			auto e = WSAGetLastError();
+			auto e = get_last_net_error();
+
 			switch (e) {
-			case WSAEWOULDBLOCK:
-			case WSAEINPROGRESS:
+			case err_wouldblock:
+			case err_inprogress:
 				return true;
-			case WSAEINTR:
+			case err_intr:
 				goto again;
 			default:
 				return false;
@@ -941,9 +940,7 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		void close() {
 			if (_sock >= 0) {
 				setblock(true);
-				while (WSAEWOULDBLOCK == ::closesocket(_sock)) {
-					this_thread::sleep_for(milliseconds(100));
-				}
+				close_socket(_sock);
 				_sock = -1;
 			}
 		}
@@ -987,14 +984,14 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 					if (n == 0)
 						return *this;
 
-					auto e = WSAGetLastError();
+					auto e = get_last_net_error();
 					switch (e) {
-					case WSAEISCONN:
+					case err_isconn:
 						return *this;
-					case WSAEALREADY:
-					case WSAEINPROGRESS:
-					case WSAEWOULDBLOCK:
-					case WSAEINTR: {
+					case err_already:
+					case err_inprogress:
+					case err_wouldblock:
+					case err_intr: {
 						if (is_connected())
 							return *this;
 						auto sel = new_shared<select_t>();
@@ -1019,7 +1016,7 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 		socket_t& setblock(bool f) {
 #ifdef this_platform_windows
 			unsigned long ul = (f ? 0 : 1);
-			::ioctlsocket(_sock, FIONBIO, (unsigned long *)&ul);
+			set_block(_sock, f);
 			_isblocked = f;
 #endif
 			return *this;
@@ -1052,13 +1049,12 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 			addr.sin_port = htons(port);
 			addr.sin_addr.s_addr = INADDR_ANY;
 			_sock = (int)::socket(AF_INET, SOCK_STREAM, 0);
-			unsigned long ul = 1;
-			::ioctlsocket(_sock, FIONBIO, (unsigned long *)&ul);
+			set_block(_sock, true);
 			::bind(_sock, (sockaddr*)&addr, sizeof(addr));
 			::listen(_sock, 1024);
 		}
 		~listener_t() {
-			::closesocket(_sock);
+			close_socket(_sock);
 		}
 
 		shared_ptr<socket_t> accept(high_resolution_clock::duration timeout)

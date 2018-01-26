@@ -100,7 +100,7 @@ int test_listen_connect() {
 	
 	return 0;
 }
-
+#ifdef this_platform_windows
 int fiber(int x) {
 	if (x <= 2)
 		return 1;
@@ -113,7 +113,7 @@ int fiber(int x) {
 void test_coroutine() {	
 	cout << fiber(10) << endl;
 }
-
+#endif
 void test_thread_pool() {
 	auto tpool = new_shared<thread_pool_t>();
 	list<future<size_t>> results;
@@ -277,10 +277,11 @@ void test_recv_until()
 }
 
 int main() {
-
+#ifdef this_platform_windows
 	WSAData wd;
 	WSAStartup(MAKEWORD(1, 1), &wd);
 	scope(WSACleanup());
+#endif
 	//test_listen_connect();
 	//test_coroutine();
 	//test_asm();

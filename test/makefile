@@ -1,6 +1,6 @@
 
 cc=g++
-cxxflags=-std=c++11 -pthread -g -Wall -I..
+cxxflags=-std=c++11 -pthread -g -Wall -Werror -I..
 header=../this_space.hpp
 target=test-echo
 
