@@ -995,6 +995,8 @@ void throw_runtimerror_impl(const char* file, int line, const char* fmt, ...) {
 					case WSAEINPROGRESS:
 					case WSAEWOULDBLOCK:
 					case WSAEINTR: {
+						if (is_connected())
+							return *this;
 						auto sel = new_shared<select_t>();
 						sel->push(this);
 						sel->wait(timeout - (this_time - begin_time));

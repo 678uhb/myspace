@@ -266,11 +266,13 @@ void test_recv_until()
 		}
 	}).detach();
 
+	cout << "before connect" << endl;
 	auto c = new_shared<socket_t>("127.0.0.1:8888",seconds(10));
+	cout << "after connect" << endl;
 	for (;;)
 	{
-		c->send("", seconds(2));
-		this_thread::sleep_for(milliseconds(100));
+		c->send("aabbaaaaafdsaabbaacfdsafsdafasdfsdafsdfaabbaac", seconds(2));
+		this_thread::sleep_for(seconds(100));
 	}
 }
 
