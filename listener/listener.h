@@ -4,7 +4,7 @@
 #include "myspace/config.h"
 #include "myspace/socket/socket.h"
 
-my_space_begin
+myspace_begin
 
 
 class listener_t 
@@ -25,4 +25,4 @@ private:
 };
 
 
-my_space_end
+myspace_end

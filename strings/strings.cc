@@ -1,7 +1,7 @@
 
 #include "myspace/strings/strings.h"
 
-my_space_begin
+myspace_begin
 
 
 string Strings::tolower(const string& src)
@@ -118,9 +118,9 @@ deque<string> Strings::split(const char* src, char delm)
 
 string StringStream::str()
 {
-	return move(_ss.str());
+	return _ss.str();
 }
 
-my_space_end
+myspace_end
 
 

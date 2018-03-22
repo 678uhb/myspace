@@ -3,7 +3,7 @@
 #include "myspace/config/config.h"
 #include "myspace/strings/strings.h"
 
-my_space_begin
+myspace_begin
 
 Config::Config(const string& path)
 {
@@ -28,4 +28,4 @@ Config::Config(const string& path)
 	}
 }
 
-my_space_end
+myspace_end

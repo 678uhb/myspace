@@ -1,7 +1,7 @@
 
 #include "myspace/uuid/uuid.h"
 
-my_space_begin
+myspace_begin
 
 string UUID::gen()
 {
@@ -45,4 +45,4 @@ string UUID::gen()
 #endif
 }
 
-my_space_end
+myspace_end

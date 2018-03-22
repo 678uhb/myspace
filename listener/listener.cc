@@ -2,7 +2,7 @@
 #include "myspace/listener/listener.h"
 #include "myspace/memory/memory.h"
 #include "myspace/select/select.h"
-my_space_begin
+myspace_begin
 
 
 listener_t::listener_t(uint16_t port) 
@@ -55,4 +55,4 @@ int listener_t::get_fd()
 	return _sock;
 }
 
-my_space_end
+myspace_end

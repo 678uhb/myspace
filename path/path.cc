@@ -2,7 +2,7 @@
 
 #include "myspace/path/path.h"
 
-my_space_begin
+myspace_begin
 
 string Path::basename(const string& path)
 {
@@ -15,4 +15,4 @@ string Path::basename(const string& path)
 }
 
 
-my_space_end
+myspace_end

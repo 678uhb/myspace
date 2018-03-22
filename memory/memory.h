@@ -3,7 +3,7 @@
 
 #include "myspace/config.h"
 
-my_space_begin
+myspace_begin
 
 template<class t, class... a>
 unique_ptr<t> new_unique(a&&... args)
@@ -50,5 +50,5 @@ auto new_shared(a&&... args)
 	}*/
 }
 
-my_space_end
+myspace_end
 

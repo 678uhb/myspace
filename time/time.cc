@@ -3,7 +3,7 @@
 #include "myspace/time/time.h"
 #include "myspace/memory/memory.h"
 
-my_space_begin
+myspace_begin
 
 string Time::format(time_t t, const string& fmt)
 {
@@ -26,4 +26,4 @@ string Time::format(time_t t, const string& fmt)
 	return move(ret);
 }
 
-my_space_end
+myspace_end

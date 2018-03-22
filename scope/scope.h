@@ -4,7 +4,7 @@
 #include "myspace/config.h"
 #include "myspace/annoymous/annoymous.h"
 
-my_space_begin
+myspace_begin
 
 class Scope 
 {
@@ -43,4 +43,4 @@ private:
 
 #define defer(f) Annoymous(Scope)([&](){f;})
 
-my_space_end
+myspace_end

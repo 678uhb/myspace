@@ -4,7 +4,7 @@
 #include "myspace/config.h"
 #include "myspace/strings/strings.h"
 
-my_space_begin
+myspace_begin
 
 class Exception : public exception 
 {
@@ -48,4 +48,4 @@ private:
 
 
 
-my_space_end
+myspace_end

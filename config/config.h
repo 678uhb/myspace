@@ -4,7 +4,7 @@
 
 #include "myspace/config.h"
 
-my_space_begin
+myspace_begin
 
 class Config 
 {
@@ -73,4 +73,4 @@ public:
 private:
 	unordered_map<string, unordered_map<string, string>> _dict;
 };
-my_space_end
+myspace_end

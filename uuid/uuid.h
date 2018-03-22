@@ -3,7 +3,7 @@
 
 #include "myspace/config.h"
 
-my_space_begin
+myspace_begin
 
 class UUID
 {
@@ -13,4 +13,4 @@ public:
 
 };
 
-my_space_end
+myspace_end

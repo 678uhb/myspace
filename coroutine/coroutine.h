@@ -3,7 +3,7 @@
 
 #include "myspace/config.h"
 
-my_space_begin
+myspace_begin
 
 template<class type>
 class coroutine_t {
@@ -122,4 +122,4 @@ namespace this_coroutine
 
 
 
-my_space_end
+myspace_end

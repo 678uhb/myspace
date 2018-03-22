@@ -3,7 +3,7 @@
 
 #include "myspace/config.h"
 
-my_space_begin
+myspace_begin
 
 class Strings
 {
@@ -24,9 +24,15 @@ public:
 	static deque<string> split(const char* src, char delm);
 };
 
-class StringStream
+class StringStream : public stringstream
 {
 public:
+
+	template<class... Targs>
+	StringStream(Targs&&... args)
+	{
+		put(forward<Targs>(args)...);
+	}
 
 	template<class Type>
 	StringStream& operator << (const Type& x)
@@ -36,18 +42,53 @@ public:
 	}
 
 	template<class Type>
-	operator Type()
+	StringStream& operator >> (Type& x)
+	{
+		_ss >> x;
+		return *this;
+	}
+
+	template<class Type>
+	operator Type ()
 	{
 		Type x;
 		_ss >> x;
-		return move(x);
+		return x;
 	}
 
 	string str();
+
+	template<class... Targs>
+	StringStream& put(Targs&&... args)
+	{
+		_put(forward<Targs>(args)...);
+		return *this;
+	}
+
+private:
+
+	template<class T, class... Targs>
+	StringStream& _put(T&& x, Targs&&... args)
+	{
+		_ss << x;
+		return _put(forward<Targs>(args)...);
+	}
+
+	template<class T>
+	StringStream& _put(T&& x)
+	{
+		_ss << x;
+		return *this;
+	}
+
+	StringStream& _put()
+	{
+		return *this;
+	}
 
 private:
 	stringstream _ss;
 };
 
-my_space_end
+myspace_end
 

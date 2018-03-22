@@ -2,7 +2,7 @@
 #include "myspace/threadpool/threadpool.h"
 #include "myspace/mutex/mutex.h"
 
-my_space_begin
+myspace_begin
 
 
 ThreadPool::ThreadPool(size_t count)
@@ -57,4 +57,4 @@ ThreadPool::~ThreadPool()
 }
 
 
-my_space_end
+myspace_end

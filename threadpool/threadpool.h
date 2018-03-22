@@ -4,7 +4,7 @@
 #include "myspace/config.h"
 #include "myspace/critical/critical.h"
 
-my_space_begin
+myspace_begin
 
 class ThreadPool
 {
@@ -55,9 +55,9 @@ private:
 	}
 
 	bool								_stop = false;
-	Critial<list<function<void()>>>		_jobs;
+	Critical<list<function<void()>>>		_jobs;
 	list<thread>						_threads;
 };
 
 
-my_space_end
+myspace_end

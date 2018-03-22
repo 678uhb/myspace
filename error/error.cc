@@ -2,7 +2,7 @@
 #include "myspace/error/error.h"
 #include "myspace/scope/scope.h"
 
-my_space_begin
+myspace_begin
 
 int Error::lastNetError()
 {
@@ -34,4 +34,4 @@ string Error::strerror(int ec)
 }
 
 
-my_space_end
+myspace_end

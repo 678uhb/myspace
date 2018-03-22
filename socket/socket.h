@@ -3,7 +3,7 @@
 
 #include "myspace/config.h"
 
-my_space_begin
+myspace_begin
 
 class Socket
 {
@@ -63,4 +63,4 @@ void set_block(int fd, bool f);
 void close_socket(int sock);
 
 
-my_space_end
+myspace_end

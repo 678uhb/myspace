@@ -1,7 +1,7 @@
 
 #include "myspace/select/select.h"
 
-my_space_begin
+myspace_begin
 
 
 Select::Select()
@@ -36,4 +36,4 @@ Select& Select::reset()
 	return *this;
 }
 
-my_space_end
+myspace_end

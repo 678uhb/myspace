@@ -1,11 +1,11 @@
 
 #include "myspace/exception/exception.h"
 
-my_space_begin
+myspace_begin
 
 
 
-my_space_end
+myspace_end
 
 
 

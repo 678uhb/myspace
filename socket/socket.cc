@@ -5,7 +5,7 @@
 #include "myspace/select/select.h"
 #include "myspace/strings/strings.h"
 
-my_space_begin
+myspace_begin
 
 Socket::Socket(int sock)
 {
@@ -256,7 +256,7 @@ Socket& Socket::set_addr(const char* ipport)
 	else if (tokens.size() >= 2)
 	{
 		_ip = Strings::strip(tokens[0]);
-		_port = (StringStream() << Strings::strip(tokens[1]));
+		_port = StringStream(Strings::strip(tokens[1])) ;
 	}
 	return *this;
 }
@@ -373,4 +373,4 @@ void close_socket(int sock)
 }
 
 
-my_space_end
+myspace_end

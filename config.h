@@ -77,5 +77,5 @@ using namespace chrono;
 using namespace this_thread;
 
 
-#define my_space_begin namespace MySpace {
-#define my_space_end }
+#define myspace_begin namespace myspace {
+#define myspace_end   }

@@ -2,7 +2,7 @@
 
 #include "myspace/os/os.h"
 
-my_space_begin
+myspace_begin
 
 size_t OS::filesize(const string& path)
 {
@@ -16,4 +16,4 @@ size_t OS::filesize(const string& path)
 	return ifs.tellg();
 }
 
-my_space_end
+myspace_end

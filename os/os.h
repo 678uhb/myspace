@@ -3,7 +3,7 @@
 
 #include "myspace/config.h"
 
-my_space_begin
+myspace_begin
 
 class OS
 {
@@ -12,4 +12,4 @@ public:
 	static size_t filesize(const string& path);
 };
 
-my_space_end
+myspace_end
