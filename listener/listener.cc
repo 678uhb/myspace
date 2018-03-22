@@ -5,7 +5,7 @@
 myspace_begin
 
 
-listener_t::listener_t(uint16_t port) 
+Listener::Listener(uint16_t port) 
 {
 	_port = port;
 	sockaddr_in addr;
@@ -18,12 +18,12 @@ listener_t::listener_t(uint16_t port)
 	::listen(_sock, 1024);
 }
 
-listener_t::~listener_t() 
+Listener::~Listener() 
 {
 	close_socket(_sock);
 }
 
-shared_ptr<Socket> listener_t::accept(high_resolution_clock::duration timeout)
+shared_ptr<Socket> Listener::accept(high_resolution_clock::duration timeout)
 {
 	for (auto this_time = high_resolution_clock::now(), begin_time = this_time;
 		this_time - begin_time <= timeout;
@@ -50,7 +50,7 @@ shared_ptr<Socket> listener_t::accept(high_resolution_clock::duration timeout)
 	return nullptr;
 }
 
-int listener_t::get_fd() 
+int Listener::get_fd() 
 {
 	return _sock;
 }
