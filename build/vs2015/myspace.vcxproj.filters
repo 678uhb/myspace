@@ -1,0 +1,188 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\..\config\config.h">
+      <Filter>config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\log\log.h">
+      <Filter>log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\memory\memory.h">
+      <Filter>memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\annoymous\annoymous.h">
+      <Filter>annoymous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\socket\socket.h">
+      <Filter>socket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\listener\listener.h">
+      <Filter>listener</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\select\select.h">
+      <Filter>select</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\path\path.h">
+      <Filter>path</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\strings\strings.h">
+      <Filter>strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\os.h">
+      <Filter>os</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\time\time.h">
+      <Filter>time</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\uuid\uuid.h">
+      <Filter>uuid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\wav\wav.h">
+      <Filter>wav</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shared\shared.h">
+      <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\coroutine\coroutine.h">
+      <Filter>coroutine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\exception\exception.h">
+      <Filter>exception</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mutex\mutex.h">
+      <Filter>mutex</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\myspace.h" />
+    <ClInclude Include="..\..\config.h" />
+    <ClInclude Include="..\..\error\error.h">
+      <Filter>error</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\static\static.h">
+      <Filter>static</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\threadpool\threadpool.h">
+      <Filter>threadpool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\critical\critical.h">
+      <Filter>critical</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="config">
+      <UniqueIdentifier>{562032c5-aece-4020-b06f-711a35458dc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="log">
+      <UniqueIdentifier>{3c21a793-0d49-4ac3-80b1-21a55ed6ae79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="memory">
+      <UniqueIdentifier>{0410b772-282f-4994-8e71-0c8b02de6dc1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="annoymous">
+      <UniqueIdentifier>{b227cba8-7974-4153-a691-b3babcbcaa12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="socket">
+      <UniqueIdentifier>{38ac8ba5-8dae-473d-bb93-2ac13072dd8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="listener">
+      <UniqueIdentifier>{1357a979-598c-44b3-9915-ca1a54ba771f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="select">
+      <UniqueIdentifier>{b6c7bfd0-ce30-4709-9a01-7bc7a2dfa8c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="path">
+      <UniqueIdentifier>{e762e576-5e53-4e40-b293-86d52059baf8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="strings">
+      <UniqueIdentifier>{e8d79e0c-10ad-45ad-9326-8e63be7b9a9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="os">
+      <UniqueIdentifier>{8865b21e-fa0e-44f7-b19f-2bb9bc333767}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="time">
+      <UniqueIdentifier>{40c1a8d2-85ea-4d72-9678-aa85992e7c81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="uuid">
+      <UniqueIdentifier>{190a0bce-5a06-4a87-b951-a2c467f367f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="wav">
+      <UniqueIdentifier>{5f387c02-371e-42e9-bb3c-0976d12af392}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shared">
+      <UniqueIdentifier>{8f7f8535-a312-4cbc-b7a1-23ee5964c846}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="coroutine">
+      <UniqueIdentifier>{4290a576-1d3d-4362-8d3d-634416e7ea34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="exception">
+      <UniqueIdentifier>{4ec2750a-631f-49de-b4df-35f05d75bf03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mutex">
+      <UniqueIdentifier>{7631e59e-934c-4795-a244-fcc065adf424}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="static">
+      <UniqueIdentifier>{de908de3-240b-4f17-8fc2-5ed47cfb0b30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="error">
+      <UniqueIdentifier>{67e973dc-0fb0-4b0e-ba3e-100a4b4237c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="threadpool">
+      <UniqueIdentifier>{914756ad-ea41-481c-b81a-b3eb9e6d6dde}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="critical">
+      <UniqueIdentifier>{ed528ff6-e54e-499d-88a3-3ffdb1b038be}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\config\config.cc">
+      <Filter>config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\log\log.cc">
+      <Filter>log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\listener\listener.cc">
+      <Filter>listener</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\select\select.cc">
+      <Filter>select</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\socket\socket.cc">
+      <Filter>socket</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\path\path.cc">
+      <Filter>path</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\strings\strings.cc">
+      <Filter>strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\os.cc">
+      <Filter>os</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\time\time.cc">
+      <Filter>time</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\uuid\uuid.cc">
+      <Filter>uuid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\wav\wav.cc">
+      <Filter>wav</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\coroutine\coroutine.cc">
+      <Filter>coroutine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\exception\exception.cc">
+      <Filter>exception</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\mutex\mutex.cc">
+      <Filter>mutex</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\error\error.cc">
+      <Filter>error</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\threadpool\threadpool.cc">
+      <Filter>threadpool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\critical\critical.cc">
+      <Filter>critical</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
