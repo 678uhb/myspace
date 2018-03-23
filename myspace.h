@@ -7,3 +7,4 @@
 #include "myspace/socket/socket.h"
 #include "myspace/scope/scope.h"
 #include "myspace/listener/listener.h"
+#include "myspace/exception/exception.h"

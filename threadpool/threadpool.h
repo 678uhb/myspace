@@ -3,6 +3,7 @@
 
 #include "myspace/config.h"
 #include "myspace/critical/critical.h"
+#include "myspace/mutex/mutex.h"
 
 myspace_begin
 
@@ -10,8 +11,6 @@ class ThreadPool
 {
 public:
 	ThreadPool(size_t count = thread::hardware_concurrency());
-
-	~ThreadPool();
 
 	template<class ft, class... argst>
 	auto push_front(ft&& f, argst&&... args)
@@ -28,6 +27,8 @@ public:
 		return move(push(false, forward<ft>(f), forward<argst>(args)...));
 	}
 
+	~ThreadPool();
+
 private:
 
 	template<class ft, class... argst>
@@ -41,21 +42,21 @@ private:
 
 		auto ret = job->get_future();
 
-		if_lock(_jobs._mtx) 
+		if_lock(_jobs) 
 		{
 			if (putfront)
-				_jobs._hold.emplace_front([job]() { (*job)(); });
+				_jobs.emplace_front([job]() { (*job)(); });
 			else
-				_jobs._hold.emplace_back([job]() { (*job)(); });
+				_jobs.emplace_back([job]() { (*job)(); });
 		}
 
-		_jobs._cond.notify_one();
+		_jobs.notify_one();
 
 		return move(ret);
 	}
 
 	bool								_stop = false;
-	Critical<list<function<void()>>>		_jobs;
+	Critical<list<function<void()>>>	_jobs;
 	list<thread>						_threads;
 };
 

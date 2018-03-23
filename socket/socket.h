@@ -18,9 +18,13 @@ public:
 
 	size_t send(const string& data, high_resolution_clock::duration timeout);
 
+	size_t send(const string& data);
+
 	string recv(high_resolution_clock::duration timeout);
 
 	string recv(size_t len, high_resolution_clock::duration timeout);
+
+	string recv(size_t len);
 
 	string recv_until(const string& delm, high_resolution_clock::duration timeout);
 

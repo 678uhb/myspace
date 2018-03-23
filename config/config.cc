@@ -11,7 +11,9 @@ Config::Config(const string& path)
 	string section = "this";
 	for (ifstream fs(path); getline(fs, line); ) 
 	{
-		if (Strings::strip(line).empty())
+		line = Strings::strip(line);
+
+		if (line.empty())
 			continue;
 
 		if (line[0] == '[') 

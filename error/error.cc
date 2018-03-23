@@ -1,6 +1,7 @@
 
 #include "myspace/error/error.h"
 #include "myspace/scope/scope.h"
+#include "myspace/memory/memory.h"
 
 myspace_begin
 
@@ -28,7 +29,7 @@ string Error::strerror(int ec)
 		(LPTSTR)&buf, 0, nullptr);
 	return move(string((char*)buf));
 #else
-	auto buf = new_unique_array<char>(1024);
+	auto buf = new_unique<char[]>(1024);
 	return move(string(::strerror_r(ec, buf.get(), 1024)));
 #endif
 }

@@ -61,6 +61,35 @@ size_t Socket::send(const string& data, high_resolution_clock::duration timeout)
 	return sendn;
 }
 
+size_t Socket::send(const string & data)
+{
+	size_t sendn = 0;
+
+	while (sendn < data.size() )
+	{
+		auto n = ::send(_sock, data.c_str() + sendn, int(data.size() - sendn), 0);
+
+		if (n > 0)
+			sendn += n;
+
+		else if (n == 0)
+			break;
+
+		else
+		{
+			auto e = Error::lastNetError();
+
+			if (e == Error::wouldblock || e == Error::intr || e == Error::inprogress)
+			{
+				continue;
+			}
+
+			break;
+		}
+	}
+	return sendn;
+}
+
 string Socket::recv(high_resolution_clock::duration timeout)
 {
 	string data;
@@ -130,6 +159,40 @@ string Socket::recv(size_t len, high_resolution_clock::duration timeout)
 				auto sel = new_shared<Select>();
 				sel->push(this);
 				sel->wait(timeout - (this_time - begin_time));
+				continue;
+			}
+			break;
+		}
+	}
+	return move(string(buf.get(), recvn));
+}
+
+string Socket::recv(size_t len)
+{
+	if (len == 0)
+		return "";
+
+	size_t recvn = 0;
+
+	auto buf = new_unique<char[]>(len);
+
+	while ( recvn < len )
+	{
+		auto n = ::recv(_sock, buf.get() + recvn, int(len - recvn), 0);
+
+		if (n > 0)
+		{
+			recvn += n;
+		}
+
+		else if (n == 0)
+			break;
+
+		else
+		{
+			auto e = Error::lastNetError();
+			if (e == Error::wouldblock || e == Error::intr || e == Error::inprogress)
+			{	
 				continue;
 			}
 			break;

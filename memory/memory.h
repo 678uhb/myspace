@@ -6,48 +6,25 @@
 myspace_begin
 
 template<class t, class... a>
-unique_ptr<t> new_unique(a&&... args)
+typename enable_if<!is_array<t>::value, unique_ptr<t>>::type
+new_unique(a&&... args)
 {
-	return make_unique<t>(forward<a>(args)...);
+	return unique_ptr<t>(new t(forward<a>(args)...));
+}
 
-	/*while (true)
-	{
-		try
-		{
-			auto p = new t(forward<a&&>(args)...);
-			if (p)
-			{
-				return unique_ptr<t>(p);
-			}
-		}
-		catch (bad_alloc&)
-		{
-			this_thread::yield();
-		}
-	}*/
+template<class t>
+typename enable_if<is_array<t>::value && extent<t>::value == 0, unique_ptr<t>>::type
+new_unique(size_t count)
+{
+	typedef typename remove_extent<t>::type T;
+	return unique_ptr<t>(new T[count]());
 }
 
 
 template<class t, class... a>
-auto new_shared(a&&... args)
+shared_ptr<t> new_shared(a&&... args)
 {
-	return make_shared<t>(forward<a>(args)...);
-
-	/*while (true)
-	{
-		try
-		{
-			auto p = new t(forward<a&&>(args)...);
-			if (p)
-			{
-				return shared_ptr<t>(p);
-			}
-		}
-		catch (bad_alloc&)
-		{
-			this_thread::yield();
-		}
-	}*/
+	return move(make_shared<t>(forward<a>(args)...));
 }
 
 myspace_end

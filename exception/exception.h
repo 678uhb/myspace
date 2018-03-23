@@ -10,42 +10,33 @@ class Exception : public exception
 {
 public:
 
-	template<class... types>
-	Exception(const char* file, int line, const string& types...)
+	template<class... Types>
+	Exception(const char* file, int line, Types&&... types)
 	{
 		StringStream ss;
-		ss << file << ":" << line << " " << types...;
+		ss << file << ":" << line << " ";
+		ss.put(forward<Types>(types)...);
 		_desc = move(ss.str());
 	}
 
-	static void throwNested(exception&& e)
+	template<class... Types>
+	static void Throw(const char* file, int line, Types&&... types)
 	{
-		if (current_exception())
-		{
-			throw_with_nested(move(e));
-		}
-		else
-		{
-			throw move(e);
-		}
+		Exception(file, line, forward<Types>(types)...).Throw();
 	}
+
+	static void Throw(exception& e);
+
+	void Throw();
 
 private:
 	string	_desc;
 };
 
 
+#define ethrow(...) Exception::Throw(__FILE__, __LINE__, ##__VA_ARGS__);
 
-
-
-#define throw_syserror(ec) do { \
-    throw_e(syserror_t(__FILE__,__LINE__,ec, get_error_msg(ec)));  \
-} while(0)
-#define throw_syserror_if(x) if((x)) do { \
-	auto ec = getlasterror();  \
-    throw_e(syserror_t(__FILE__,__LINE__,ec, get_error_msg(ec)));  \
-} while(0)
-
+#define if_throw(x) if((x)) ethrow(#x);
 
 
 myspace_end
