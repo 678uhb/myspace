@@ -21,10 +21,8 @@ struct LoggerItem
 class Sink
 {
 public:
-	virtual ~Sink()
-	{
+	virtual ~Sink() {}
 
-	}
 	virtual void put(shared_ptr<LoggerItem> item) = 0;
 };
 
@@ -37,31 +35,28 @@ public:
 class Logger
 {
 public:
-	Logger()
-	{
-		_sinks.push_back(new_shared<ConsoleSink>());
-	}
+	Logger();
 
 	template<class... Targs>
-	Logger& pdebug(const char* file, int line, Targs&&... args)
+	Logger& printDebug(const char* file, int line, Targs&&... args)
 	{
 		return print(file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
-	Logger& pinfo(const char* file, int line, Targs&&... args)
+	Logger& printInfo(const char* file, int line, Targs&&... args)
 	{
 		return print(file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
-	Logger& pwarn(const char* file, int line, Targs&&... args)
+	Logger& printWarn(const char* file, int line, Targs&&... args)
 	{
 		return print(file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
-	Logger& perror(const char* file, int line, Targs&&... args)
+	Logger& printError(const char* file, int line, Targs&&... args)
 	{
 		return print(file, line, forward<Targs>(args)...);
 	}
@@ -80,7 +75,6 @@ private:
 		{
 			sink->put(item);
 		}
-
 		return *this;
 	}
 
@@ -88,9 +82,11 @@ private:
 	deque<shared_ptr<Sink>>					  _sinks;
 };
 
-#define debug(...)  pdebug(__FILE__,__LINE__,##__VA_ARGS__)
-#define warn(...)  pwarn(__FILE__,__LINE__,##__VA_ARGS__)
-#define info(...)  pinfo(__FILE__,__LINE__,##__VA_ARGS__)
-#define error(...)  perror(__FILE__,__LINE__,##__VA_ARGS__)
+#define debug(...)  printDebug(__FILE__,__LINE__,##__VA_ARGS__)
+#define warn(...)	printWarn(__FILE__,__LINE__,##__VA_ARGS__)
+#define info(...)	printInfo(__FILE__,__LINE__,##__VA_ARGS__)
+#define error(...)  printError(__FILE__,__LINE__,##__VA_ARGS__)
+
+extern Logger logger;
 
 myspace_end

@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "myspace/config.h"
 
 myspace_begin

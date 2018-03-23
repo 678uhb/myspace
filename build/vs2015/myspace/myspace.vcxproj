@@ -142,6 +142,7 @@
     <ClInclude Include="..\..\..\mutex\mutex.h" />
     <ClInclude Include="..\..\..\myspace.h" />
     <ClInclude Include="..\..\..\os\os.h" />
+    <ClInclude Include="..\..\..\pack\pack.h" />
     <ClInclude Include="..\..\..\path\path.h" />
     <ClInclude Include="..\..\..\scope\scope.h" />
     <ClInclude Include="..\..\..\select\select.h" />
@@ -163,6 +164,7 @@
     <ClCompile Include="..\..\..\logger\logger.cc" />
     <ClCompile Include="..\..\..\mutex\mutex.cc" />
     <ClCompile Include="..\..\..\os\os.cc" />
+    <ClCompile Include="..\..\..\pack\pack.cc" />
     <ClCompile Include="..\..\..\path\path.cc" />
     <ClCompile Include="..\..\..\select\select.cc" />
     <ClCompile Include="..\..\..\socket\socket.cc" />

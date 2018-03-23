@@ -16,7 +16,7 @@ public:
 
 
 	template<class type_t = string>
-	type_t get(const string& section, const string& key, const type_t& defaut) 
+	type_t get(const string& section, const string& key, const type_t& defaut) const
 	{
 		auto itr = _dict.find(section);
 
@@ -36,7 +36,7 @@ public:
 	}
 
 	template<class type_t = string>
-	type_t get(const string& section, const string& key)
+	type_t get(const string& section, const string& key) const
 	{
 		auto itr = _dict.find(section);
 

@@ -7,21 +7,20 @@
 myspace_begin
 
 
-class Listener 
+class Listener
 {
 public:
 	
 	Listener(uint16_t port);
 
-	~Listener();
-
 	shared_ptr<Socket> accept(high_resolution_clock::duration timeout);
+
+	~Listener();
 
 	int get_fd();
 
 private:
-	int		 _sock = -1;
-	uint16_t _port = 0;
+	int		 _sock = Socket();
 };
 
 

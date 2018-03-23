@@ -1,4 +1,4 @@
-#pragma once
+
 
 #include "myspace/config/config.h"
 #include "myspace/strings/strings.h"

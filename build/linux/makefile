@@ -2,7 +2,7 @@ vars_old := $(.VARIABLES)
 
 cc=g++
 
-cxxflags=-g -pthread -std=c++11 -I../../.. -MD -MP
+cxxflags=-g -pthread -std=c++11 -I../../.. -MMD -MP
 
 linkflags=-pthread
 

@@ -9,7 +9,7 @@ class Time
 {
 public:
 
-	string format(time_t t = time(0), const string& fmt = "%F %T");
+	static string format(time_t t = time(0), const string& fmt = "%F %T");
 };
 
 myspace_end

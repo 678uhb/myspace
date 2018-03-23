@@ -12,7 +12,11 @@ Socket::Socket(int sock)
 	_sock = sock;
 }
 
-Socket::Socket(const string& addr, high_resolution_clock::duration timeout) 
+Socket::Socket()
+{
+}
+
+Socket::Socket(const string& addr, high_resolution_clock::duration timeout)
 {
 	set_addr(addr.c_str()).connect(timeout);
 }
@@ -303,9 +307,19 @@ void Socket::close()
 {
 	if (_sock >= 0) {
 		setblock(true);
-		close_socket(_sock);
+		closeSocket(_sock);
 		_sock = -1;
 	}
+}
+
+Socket::operator int() const
+{
+	return _sock;
+}
+
+bool Socket::operator==(const Socket & s) const
+{
+	return _sock == s._sock;
 }
 
 Socket& Socket::set_addr(const char* ipport)
@@ -394,7 +408,7 @@ Socket& Socket::setblock(bool f)
 {
 #ifdef this_platform_windows
 	unsigned long ul = (f ? 0 : 1);
-	set_block(_sock, f);
+	SocketOpt::setBlock(_sock, f);
 	_isblocked = f;
 #endif
 	return *this;
@@ -413,7 +427,7 @@ int Socket::getsockerror()
 }
 
 
-void set_block(int fd, bool f)
+void SocketOpt::setBlock(int fd, bool f)
 {
 #ifdef this_platform_windows
 	unsigned long ul = f ? 1 : 0;
@@ -426,7 +440,7 @@ void set_block(int fd, bool f)
 #endif
 }
 
-void close_socket(int sock)
+void closeSocket(int sock)
 {
 #ifdef this_platform_windows
 	::closesocket(sock);
@@ -435,5 +449,10 @@ void close_socket(int sock)
 #endif
 }
 
+void SocketOpt::reuseAddr(int sock, bool f)
+{
+	int on = (f ? 1 : 0);
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,(char*)&on, sizeof(on));
+}
 
 myspace_end

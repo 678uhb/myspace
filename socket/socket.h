@@ -8,6 +8,8 @@ myspace_begin
 class Socket
 {
 public:
+	Socket();
+
 	Socket(int sock);
 
 	Socket(const string& addr, high_resolution_clock::duration timeout);
@@ -42,6 +44,10 @@ public:
 
 	void close();
 
+	bool operator == (const Socket&) const;
+
+	operator int() const;
+
 private:
 
 
@@ -62,9 +68,15 @@ private:
 	string			_ip;
 };
 
-void set_block(int fd, bool f);
 
-void close_socket(int sock);
+class SocketOpt
+{
+public:
+	static void setBlock(int fd, bool f);
 
+	static void reuseAddr(int sock, bool);
+};
+
+void closeSocket(int sock);
 
 myspace_end

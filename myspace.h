@@ -8,3 +8,4 @@
 #include "myspace/scope/scope.h"
 #include "myspace/listener/listener.h"
 #include "myspace/exception/exception.h"
+#include "myspace/logger/logger.h"

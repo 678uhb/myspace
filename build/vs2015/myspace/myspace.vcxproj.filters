@@ -66,6 +66,9 @@
     <ClInclude Include="..\..\..\scope\scope.h">
       <Filter>scope</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\pack\pack.h">
+      <Filter>pack</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="config">
@@ -131,6 +134,9 @@
     <Filter Include="scope">
       <UniqueIdentifier>{63aa5c1c-e380-487e-bf45-8fbf158bb321}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pack">
+      <UniqueIdentifier>{5f3bb176-c578-4f84-9d3d-cd3ccebbd724}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\config\config.cc">
@@ -183,6 +189,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\wav\wav.cc">
       <Filter>wav</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\pack\pack.cc">
+      <Filter>pack</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

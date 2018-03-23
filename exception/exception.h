@@ -29,6 +29,10 @@ public:
 
 	void Throw();
 
+	static string dump();
+
+	const char* what() const noexcept;
+
 private:
 	string	_desc;
 };
