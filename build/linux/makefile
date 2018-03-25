@@ -4,42 +4,32 @@ cc=g++
 
 cxxflags=-g -pthread -std=c++11 -I../../.. -MMD -MP
 
-linkflags=-pthread
+linkflags=-g -pthread
 
-src=\
-../../config/config.cc         \
-../../coroutine/coroutine.cc   \
-../../critical/critical.cc     \
-../../error/error.cc           \
-../../exception/exception.cc   \
-../../listener/listener.cc     \
-../../logger/logger.cc         \
-../../mutex/mutex.cc           \
-../../os/os.cc                 \
-../../pack/pack.cc             \
-../../path/path.cc             \
-../../select/select.cc         \
-../../socket/socket.cc         \
-../../strings/strings.cc       \
-../../threadpool/threadpool.cc \
-../../time/time.cc             \
-../../uuid/uuid.cc             \
-../../wav/wav.cc
+src= ../../logger/logger.cpp \
+	../../threadpool/threadpool.cpp 
 
-
-obj=$(patsubst %.cc,%.o,$(src))
+obj=$(patsubst %.cpp,%.o,$(src))
 
 def=$(patsubst %.o,%.d,$(obj))
 
-target=../../libs/libmyspace.a
+target=libmyspace.so
 
 all:$(target)
 
-../../libs/libmyspace.a:$(obj)
-	ar -crs $@  $^
+libmyspace.so:$(obj)
+	$(cc) $^ -shared -o $@
+	cp $@ ../../libs/libmyspace.so
+	cp $@ ../../test/libmyspace.so
 
-%.o:%.cc
-	$(cc) $(cxxflags) -c -o $@ $<
+.PHONY: test
+test:libmyspace.so
+	$(cc) $(cxxflags) -o $@ ../../test/main.cpp $(linkflags) -L. -lmyspace -Wl,-rpath,./
+	mv $@ ../../test/test
+	chmod +x ../../test/test
+	
+%.o:%.cpp
+	$(cc) $(cxxflags) -fPIC -c -o $@ $<
 
 -include $(def) 
 

@@ -1,73 +1,79 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="..\..\..\annoymous\annoymous.h">
-      <Filter>annoymous</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\config\config.h">
-      <Filter>config</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\coroutine\coroutine.h">
-      <Filter>coroutine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\critical\critical.h">
-      <Filter>critical</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\error\error.h">
-      <Filter>error</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\exception\exception.h">
+    <ClInclude Include="..\..\..\exception\exception.hpp">
       <Filter>exception</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\listener\listener.h">
+    <ClInclude Include="..\..\..\listener\listener.hpp">
       <Filter>listener</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\logger\logger.h">
+    <ClInclude Include="..\..\..\logger\logger.hpp">
       <Filter>logger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\memory\memory.h">
+    <ClInclude Include="..\..\..\error\error.hpp">
+      <Filter>error</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\config\config.hpp">
+      <Filter>config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\annoymous\annoymous.hpp">
+      <Filter>annoymous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\coroutine\coroutine.hpp">
+      <Filter>coroutine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\critical\critical.hpp">
+      <Filter>critical</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\memory\memory.hpp">
       <Filter>memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\mutex\mutex.h">
+    <ClInclude Include="..\..\..\mutex\mutex.hpp">
       <Filter>mutex</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\os\os.h">
+    <ClInclude Include="..\..\..\any\any.hpp">
+      <Filter>any</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\os\os.hpp">
       <Filter>os</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\path\path.h">
+    <ClInclude Include="..\..\..\pack\pack.hpp">
+      <Filter>pack</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\path\path.hpp">
       <Filter>path</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\select\select.h">
-      <Filter>select</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\socket\socket.h">
-      <Filter>socket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\static\static.h">
-      <Filter>static</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\strings\strings.h">
-      <Filter>strings</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\threadpool\threadpool.h">
-      <Filter>threadpool</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\time\time.h">
-      <Filter>time</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\uuid\uuid.h">
-      <Filter>uuid</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\wav\wav.h">
-      <Filter>wav</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\config.h" />
-    <ClInclude Include="..\..\..\myspace.h" />
-    <ClInclude Include="..\..\..\scope\scope.h">
+    <ClInclude Include="..\..\..\scope\scope.hpp">
       <Filter>scope</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\pack\pack.h">
-      <Filter>pack</Filter>
+    <ClInclude Include="..\..\..\socket\socket.hpp">
+      <Filter>socket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\static\static.hpp">
+      <Filter>static</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\strings\strings.hpp">
+      <Filter>strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\threadpool\threadpool.hpp">
+      <Filter>threadpool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\time\time.hpp">
+      <Filter>time</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\uuid\uuid.hpp">
+      <Filter>uuid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\wav\wav.hpp">
+      <Filter>wav</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\config.hpp" />
+    <ClInclude Include="..\..\..\myspace.hpp" />
+    <ClInclude Include="..\..\..\detector\detector.hpp">
+      <Filter>detector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\socket\socketopt.hpp">
+      <Filter>socket</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -85,9 +91,6 @@
     </Filter>
     <Filter Include="listener">
       <UniqueIdentifier>{1357a979-598c-44b3-9915-ca1a54ba771f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="select">
-      <UniqueIdentifier>{b6c7bfd0-ce30-4709-9a01-7bc7a2dfa8c0}</UniqueIdentifier>
     </Filter>
     <Filter Include="path">
       <UniqueIdentifier>{e762e576-5e53-4e40-b293-86d52059baf8}</UniqueIdentifier>
@@ -109,9 +112,6 @@
     </Filter>
     <Filter Include="coroutine">
       <UniqueIdentifier>{4290a576-1d3d-4362-8d3d-634416e7ea34}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="exception">
-      <UniqueIdentifier>{4ec2750a-631f-49de-b4df-35f05d75bf03}</UniqueIdentifier>
     </Filter>
     <Filter Include="mutex">
       <UniqueIdentifier>{7631e59e-934c-4795-a244-fcc065adf424}</UniqueIdentifier>
@@ -137,61 +137,22 @@
     <Filter Include="pack">
       <UniqueIdentifier>{5f3bb176-c578-4f84-9d3d-cd3ccebbd724}</UniqueIdentifier>
     </Filter>
+    <Filter Include="any">
+      <UniqueIdentifier>{6bfbad6e-78b4-4342-a720-a8c4a07a6553}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="exception">
+      <UniqueIdentifier>{4ec2750a-631f-49de-b4df-35f05d75bf03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="detector">
+      <UniqueIdentifier>{b6c7bfd0-ce30-4709-9a01-7bc7a2dfa8c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\config\config.cc">
-      <Filter>config</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\coroutine\coroutine.cc">
-      <Filter>coroutine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\critical\critical.cc">
-      <Filter>critical</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\error\error.cc">
-      <Filter>error</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\exception\exception.cc">
-      <Filter>exception</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\listener\listener.cc">
-      <Filter>listener</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\logger\logger.cc">
+    <ClCompile Include="..\..\..\logger\logger.cpp">
       <Filter>logger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\mutex\mutex.cc">
-      <Filter>mutex</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\os\os.cc">
-      <Filter>os</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\path\path.cc">
-      <Filter>path</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\select\select.cc">
-      <Filter>select</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\socket\socket.cc">
-      <Filter>socket</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\strings\strings.cc">
-      <Filter>strings</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\threadpool\threadpool.cc">
+    <ClCompile Include="..\..\..\threadpool\threadpool.cpp">
       <Filter>threadpool</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\time\time.cc">
-      <Filter>time</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\uuid\uuid.cc">
-      <Filter>uuid</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\wav\wav.cc">
-      <Filter>wav</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\pack\pack.cc">
-      <Filter>pack</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
