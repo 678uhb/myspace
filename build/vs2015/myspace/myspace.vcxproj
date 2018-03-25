@@ -146,6 +146,7 @@
     <ClInclude Include="..\..\..\os\os.hpp" />
     <ClInclude Include="..\..\..\pack\pack.hpp" />
     <ClInclude Include="..\..\..\path\path.hpp" />
+    <ClInclude Include="..\..\..\process\process.hpp" />
     <ClInclude Include="..\..\..\scope\scope.hpp" />
     <ClInclude Include="..\..\..\socket\socket.hpp" />
     <ClInclude Include="..\..\..\socket\socketopt.hpp" />

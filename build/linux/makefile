@@ -4,8 +4,6 @@ cc=g++
 
 cxxflags=-g -pthread -std=c++11 -I../../.. -MMD -MP
 
-linkflags=-g -pthread
-
 src= ../../logger/logger.cpp \
 	../../threadpool/threadpool.cpp 
 
@@ -13,23 +11,27 @@ obj=$(patsubst %.cpp,%.o,$(src))
 
 def=$(patsubst %.o,%.d,$(obj))
 
-target=libmyspace.so
+target=libmyspace.a
 
 all:$(target)
 
 libmyspace.so:$(obj)
 	$(cc) $^ -shared -o $@
-	cp $@ ../../libs/libmyspace.so
-	cp $@ ../../test/libmyspace.so
+	chmod +x $@
+	mv $@ ../../libs/$@
+	
+libmyspace.a:$(obj)
+	ar rcs $@ $^
+	mv $@ ../../libs/$@
 
 .PHONY: test
-test:libmyspace.so
-	$(cc) $(cxxflags) -o $@ ../../test/main.cpp $(linkflags) -L. -lmyspace -Wl,-rpath,./
-	mv $@ ../../test/test
-	chmod +x ../../test/test
+test:libmyspace.a
+	$(cc) $(cxxflags) -o $@ ../../test/main.cpp -g -pthread  -L../../libs -l:libmyspace.a
+	chmod +x $@
+	mv $@ ../../test/$@
 	
 %.o:%.cpp
-	$(cc) $(cxxflags) -fPIC -c -o $@ $<
+	$(cc) $(cxxflags) -c -o $@ $<
 
 -include $(def) 
 

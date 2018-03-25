@@ -41,35 +41,71 @@ public:
 	}
 };
 
+
+
 class Logger
 {
+public:
+	enum Level
+	{
+		Debug = 0,
+		Info = 1,
+		Warn = 2,
+		Error = 3,
+	};
 public:
 	Logger()
 	{
 		_sinks.push_back(new_shared<ConsoleSink>());
 	}
 
+	Logger& setLevel(int lv)
+	{
+		if (lv < 0)
+		{
+			_level = Level::Debug;
+		}
+		else if (lv > Level::Error)
+		{
+			_level = Level::Error;
+		}
+		else
+		{
+			_level = (Level)lv;
+		}
+
+		return *this;
+	}
+
 	template<class... Targs>
 	Logger& printDebug(const char* file, int line, Targs&&... args)
 	{
+		if (_level > Level::Debug) return *this;
+
 		return print(file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
 	Logger& printInfo(const char* file, int line, Targs&&... args)
 	{
+		if (_level > Level::Info) return *this;
+
 		return print(file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
 	Logger& printWarn(const char* file, int line, Targs&&... args)
 	{
+		if (_level > Level::Warn) return *this;
+
 		return print(file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
 	Logger& printError(const char* file, int line, Targs&&... args)
 	{
+		if (_level > Level::Error) return *this;
+
 		return print(file, line, forward<Targs>(args)...);
 	}
 
@@ -91,7 +127,10 @@ private:
 	}
 
 private:
-	deque<shared_ptr<Sink>>					  _sinks;
+
+	Level										_level = Level::Info;
+
+	deque<shared_ptr<Sink>>						_sinks;
 };
 
 #define debug(...)  printDebug(__FILE__,__LINE__,##__VA_ARGS__)

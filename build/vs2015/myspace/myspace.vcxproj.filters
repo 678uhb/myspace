@@ -75,6 +75,9 @@
     <ClInclude Include="..\..\..\socket\socketopt.hpp">
       <Filter>socket</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\process\process.hpp">
+      <Filter>process</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="config">
@@ -145,6 +148,9 @@
     </Filter>
     <Filter Include="detector">
       <UniqueIdentifier>{b6c7bfd0-ce30-4709-9a01-7bc7a2dfa8c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="process">
+      <UniqueIdentifier>{32e39423-c016-4cb8-976f-bcfb4650cbe5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -3,13 +3,59 @@
 
 #include "myspace/config.hpp"
 #include "myspace/strings/strings.hpp"
+#include "myspace/path/path.hpp"
 
 MYSPACE_BEGIN
 
 
-namespace
+class Exception : public exception 
 {
-	void _dump(string& s, const exception& e)
+public:
+
+	template<class... Types>
+	Exception(const char* file, int line, Types&&... types)
+	{
+		StringStream ss;
+		ss << Path::basename(file) << ":" << line << " ";
+		ss.put(forward<Types>(types)...);
+		_desc = move(ss.str());
+	}
+
+	template<class... Types>
+	static void Throw(const char* file, int line, Types&&... types)
+	{
+		throw Exception(file, line, forward<Types>(types)...);
+	}
+
+	static void Throw(exception& e)
+	{
+		if (current_exception())
+		{
+			throw_with_nested(e);
+		}
+		else
+		{
+			throw e;
+		}
+	}
+
+	static string dump()
+	{
+		string s;
+
+		_dump(s);
+
+		return move(s);
+	}
+
+	virtual char const* what() const noexcept
+	{
+		return _desc.c_str();
+	}
+
+private:
+
+	static void _dump(string& s, const exception& e)
 	{
 		try
 		{
@@ -31,7 +77,7 @@ namespace
 		s.append(e.what());
 	}
 
-	void _dump(string& s)
+	static void _dump(string& s)
 	{
 		try
 		{
@@ -50,65 +96,10 @@ namespace
 		{
 
 		}
-	};
-}
-
-class Exception : public exception 
-{
-public:
-
-	template<class... Types>
-	Exception(const char* file, int line, Types&&... types)
-	{
-		StringStream ss;
-		ss << file << ":" << line << " ";
-		ss.put(forward<Types>(types)...);
-		_desc = move(ss.str());
 	}
 
-	template<class... Types>
-	static void Throw(const char* file, int line, Types&&... types)
-	{
-		Exception(file, line, forward<Types>(types)...).Throw();
-	}
-
-
-	void Throw()
-	{
-		Throw(*this);
-	}
-
-
-	static void Throw(exception& e)
-	{
-		if (current_exception())
-		{
-			throw_with_nested(e);
-		}
-		else
-		{
-			throw move(e);
-		}
-	}
-
-	static string dump()
-	{
-		string s;
-
-		_dump(s);
-
-		return move(s);
-	}
-
-	const char * what() const noexcept
-	{
-		return _desc.c_str();
-	}
-
-private:
 	string	_desc;
 };
-
 
 #define THROW(...) Exception::Throw(__FILE__, __LINE__, ##__VA_ARGS__);
 

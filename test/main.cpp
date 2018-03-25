@@ -127,7 +127,27 @@ void test_any()
 		cout << Exception::dump() << endl;
 	}
 }
+void test_process()
+{
+	cout << Process::cwd() << endl;
+	cout << Process::getMyFullName() << endl;
+	cout << Process::getMyName() << endl;
+	cout << Process::getMyNameNoExt() << endl;
+	cout << Process::cwd("..") << endl;
+}
 
+void test_exception()
+{
+	try
+	{
+		THROW("123");
+	}
+	catch (...)
+	{
+		cout << Exception::dump() << endl;
+	}
+
+}
 int main()
 {
 #ifdef MS_WINDOWS
@@ -137,8 +157,9 @@ int main()
 #if 0
 	test_any();
 #endif
-	test_detector();
-	
+	//test_detector();
+	//test_process();
+	test_exception();
 #ifdef MS_WINDOWS
 	system("pause");
 #endif
