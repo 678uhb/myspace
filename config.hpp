@@ -54,6 +54,7 @@
 #include <cctype>
 #include <csetjmp>
 //cpp headers
+#include <atomic>
 #include <algorithm>
 #include <bitset>
 #include <chrono>

@@ -2,6 +2,20 @@
 #include "myspace/myspace.hpp"
 using namespace myspace;
 
+class Printer
+{
+public:
+	Printer()
+	{
+		cout << "Printer()" << endl;
+	}
+
+	~Printer()
+	{
+		cout << "~Printer()" << endl;
+	}
+};
+
 void test_detector()
 {
 	auto listenThread = thread([] 
@@ -148,6 +162,34 @@ void test_exception()
 	}
 
 }
+
+
+void test_pool()
+{
+	auto pool = Pool<Printer>::create(100);// <PoolInt>(create);// ::create(create);
+
+	auto tpool = new_shared<ThreadPool>(100);
+
+	atomic<int> count(0);
+
+	for (int i = 0; i < 1000; ++i)
+	{
+		tpool->push_back([&count, pool]()
+		{
+			for (int i = 0; i < 10000; ++i) {
+				pool->getUnique();
+				count++;
+			}
+				
+		});
+	}
+
+	cin.get();
+	cout << count << endl;
+	cin.get();
+}
+
+
 int main()
 {
 #ifdef MS_WINDOWS
@@ -159,7 +201,8 @@ int main()
 #endif
 	//test_detector();
 	//test_process();
-	test_exception();
+	//test_exception();
+	test_pool();
 #ifdef MS_WINDOWS
 	system("pause");
 #endif

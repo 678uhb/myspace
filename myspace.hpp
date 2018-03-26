@@ -11,3 +11,4 @@
 #include "myspace/logger/logger.hpp"
 #include "myspace/any/any.hpp"
 #include "myspace/process/process.hpp"
+#include "myspace/pool/pool.hpp"

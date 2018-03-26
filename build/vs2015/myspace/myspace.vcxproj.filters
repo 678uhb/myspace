@@ -78,6 +78,9 @@
     <ClInclude Include="..\..\..\process\process.hpp">
       <Filter>process</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\pool\pool.hpp">
+      <Filter>pool</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="config">
@@ -151,6 +154,9 @@
     </Filter>
     <Filter Include="process">
       <UniqueIdentifier>{32e39423-c016-4cb8-976f-bcfb4650cbe5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pool">
+      <UniqueIdentifier>{384ee8a9-60bf-40bd-bf61-853500e59f78}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
