@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include <uuid/uuid.h>
 #include <sys/epoll.h>
+#include <iconv.h>
 
 #else
 

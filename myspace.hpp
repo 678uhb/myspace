@@ -12,3 +12,4 @@
 #include "myspace/any/any.hpp"
 #include "myspace/process/process.hpp"
 #include "myspace/pool/pool.hpp"
+#include "myspace/codec/codec.hpp"
