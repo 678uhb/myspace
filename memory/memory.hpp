@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
 template<class t, class... a>
 typename enable_if<!is_array<t>::value, unique_ptr<t>>::type
@@ -27,5 +27,5 @@ shared_ptr<t> new_shared(a&&... args)
 	return move(make_shared<t>(forward<a>(args)...));
 }
 
-MYSPACE_END
+myspace_end
 

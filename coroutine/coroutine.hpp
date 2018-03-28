@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
 template<class type>
 class Coroutine {
@@ -104,7 +104,7 @@ private:
 
 
 //////////////////////////////////////////////////////////////  windows
-#ifdef MS_WINDOWS
+#ifdef myspace_windows
 
 #include <mmsystem.hpp>
 #pragma comment(lib, "Winmm.lib")
@@ -121,4 +121,4 @@ namespace this_coroutine
 
 
 
-MYSPACE_END
+myspace_end

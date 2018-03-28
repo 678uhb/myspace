@@ -2,8 +2,8 @@
 
 #include "myspace/threadpool/threadpool.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 ThreadPool threadpool;
 
-MYSPACE_END
+myspace_end

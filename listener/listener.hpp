@@ -1,10 +1,10 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/socket/socket.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 
 class Listener
@@ -80,4 +80,4 @@ private:
 };
 
 
-MYSPACE_END
+myspace_end

@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
 
 template<class Hold,
@@ -21,4 +21,4 @@ public:
 	}
 };
 
-MYSPACE_END
+myspace_end

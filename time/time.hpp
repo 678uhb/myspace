@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class Time
 {
@@ -14,7 +14,7 @@ public:
 		auto buf = new_unique<char[]>(128);
 
 		struct tm _tm;
-#ifdef MS_WINDOWS
+#ifdef myspace_windows
 		::localtime_s(&_tm, &t);
 #else
 		::localtime_r(&t, &_tm);
@@ -31,4 +31,4 @@ public:
 	}
 };
 
-MYSPACE_END
+myspace_end

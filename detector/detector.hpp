@@ -1,17 +1,17 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/memory/memory.hpp"
 #include "myspace/any/any.hpp"
 #include "myspace/socket/socketopt.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 
 enum DetectType
 {
-#ifdef MS_LINUX
+#ifdef myspace_linux
 	READ = EPOLLIN,
 	WRITE = EPOLLOUT,
 	EXCEP = EPOLLERR,
@@ -35,7 +35,7 @@ namespace DetectorImpl
 }
 
 
-#ifdef MS_LINUX
+#ifdef myspace_linux
 class Epoll
 {
 public:
@@ -316,10 +316,10 @@ private:
 	unique_ptr<fd_set> _e = new_unique<fd_set>();
 };
 
-#ifdef MS_LINUX
+#ifdef myspace_linux
 typedef Epoll Detector;
 #else
 typedef Select Detector;
 #endif
 
-MYSPACE_END
+myspace_end

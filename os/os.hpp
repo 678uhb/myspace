@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class OS
 {
@@ -22,4 +22,4 @@ public:
 	}
 };
 
-MYSPACE_END
+myspace_end

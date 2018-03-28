@@ -1,12 +1,12 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/error/error.hpp"
 #include "myspace/detector/detector.hpp"
 #include "myspace/socket/socketopt.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class Socket
 {
@@ -327,7 +327,7 @@ public:
 
 	static void close(int sock)
 	{
-#ifdef MS_WINDOWS
+#ifdef myspace_windows
 		::closesocket(sock);
 #else
 		::close(sock);
@@ -443,7 +443,7 @@ private:
 	int getSockError()
 	{
 		int err = 0;
-#if defined(MS_WINDOWS)
+#if defined(myspace_windows)
 		int len = sizeof(err);
 #else
 		socklen_t len = sizeof(err);
@@ -462,4 +462,4 @@ private:
 
 
 
-MYSPACE_END
+myspace_end

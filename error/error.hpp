@@ -1,10 +1,10 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/scope/scope.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 
 class Error
@@ -12,7 +12,7 @@ class Error
 public:
 	enum 
 	{
-#ifdef MS_WINDOWS
+#ifdef myspace_windows
 		wouldblock = WSAEWOULDBLOCK,
 		//err_again = EAGAIN,
 		inprogress = WSAEINPROGRESS,
@@ -31,7 +31,7 @@ public:
 
 	static int lastNetError()
 	{
-#ifdef MS_WINDOWS
+#ifdef myspace_windows
 		int ec = ::WSAGetLastError();
 		if (ec) return ec;
 		return ::GetLastError();
@@ -43,7 +43,7 @@ public:
 
 	static string strerror(int ec)
 	{
-#ifdef MS_WINDOWS
+#ifdef myspace_windows
 		LPVOID buf = nullptr;
 		DEFER(::LocalFree(buf));
 		::FormatMessage(
@@ -60,4 +60,4 @@ public:
 };
 
 
-MYSPACE_END
+myspace_end

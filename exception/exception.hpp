@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/strings/strings.hpp"
 #include "myspace/path/path.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 
 class Exception : public exception 
@@ -106,4 +106,4 @@ private:
 #define IF_THROW(x) if((x)) THROW(#x);
 
 
-MYSPACE_END
+myspace_end

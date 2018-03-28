@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/memory/memory.hpp"
 #include "myspace/path/path.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class Process
 {
@@ -16,9 +16,9 @@ public:
 
 		auto name = new_unique<char[]>(maxPath);
 		int n = 0;
-#if defined(MS_WINDOWS)
+#if defined(myspace_windows)
 		n = GetModuleFileName(NULL, name.get(), maxPath);
-#elif defined(MS_LINUX)
+#elif defined(myspace_linux)
 		n = readlink("/proc/self/exe", name.get(), maxPath);
 #endif
 		if (n <= 0)
@@ -44,7 +44,7 @@ public:
 
 			auto name = new_unique<char[]>(maxPath);
 
-#if defined(MS_WINDOWS)
+#if defined(myspace_windows)
 
 			auto n = GetCurrentDirectory(maxPath, name.get());
 
@@ -59,7 +59,7 @@ public:
 			return move(string(name.get(), n));
 #endif
 		}
-#if defined(MS_WINDOWS)
+#if defined(myspace_windows)
 		SetCurrentDirectory(path.c_str());
 #else
 		chdir(path.c_str());
@@ -68,4 +68,4 @@ public:
 	}
 };
 
-MYSPACE_END
+myspace_end

@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
 #define if_lock(mtx) if(auto __ul = unique_lock<mutex>(mtx))
 
@@ -13,4 +13,4 @@ MYSPACE_BEGIN
 		ul.try_lock();									\
 		return move(ul);}())
 
-MYSPACE_END
+myspace_end

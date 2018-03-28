@@ -1,25 +1,22 @@
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
-template<class X>
-class Pool: public enable_shared_from_this<Pool<X>>
+template<class X, class Creator, class Deleter>
+class Pool: public enable_shared_from_this<Pool<X, Creator, Deleter>>
 {
-	using enable_shared_from_this<Pool<X>>::shared_from_this;
+	using enable_shared_from_this<Pool>::shared_from_this;
+
+	typedef unique_ptr<X, Deleter> StorageType;
+
+	friend class PoolFactory;
 public:
 
-	static shared_ptr<Pool<X>> create(size_t max = 0,
-		function<unique_ptr<X>()> f = []() { return new_unique<X>(); })
+	unique_ptr<X, std::function<void(X*)>> getUnique()
 	{
-		return shared_ptr<Pool<X>>(new Pool<X>(f, max));
-	}
-
-	auto getUnique()
-	{
-		auto x = _getAvaible();
-
-		unique_ptr<X, std::function<void(X*)>> up(x.release(), [pool = shared_from_this()](X* px)
+		unique_ptr<X, std::function<void(X*)>>
+		up(_getAvaible().release(), [pool = shared_from_this()](X* px)
 		{
 			pool->put(px);
 		});
@@ -29,33 +26,26 @@ public:
 
 	shared_ptr<X> getShared()
 	{
-		auto x = _getAvaible();
-
-		shared_ptr<X> sp(x.release(), [pool = shared_from_this()](X* px)
+		shared_ptr<X> 
+		sp(_getAvaible().release(), [pool = shared_from_this()](X* px)
 		{
 			pool->put(px);
 		});
 
-		return sp;
+		return move(sp);
 	}
-
-	~Pool()
-	{
-		auto ul = unique_lock<mutex>(_mtx);
-	}
-
 
 private:
 
-	unique_ptr<X> _getAvaible()
+	StorageType _getAvaible()
 	{
-		unique_ptr<X> x;
+		StorageType x(nullptr, _deleter);
 
 		for (auto ul = unique_lock<mutex>(_mtx);;)
 		{
 			if (!_avaible.empty())
 			{
-				x.swap(_avaible.front());
+				x.reset(_avaible.front().release());
 
 				_avaible.pop_front();
 
@@ -65,11 +55,9 @@ private:
 			}
 			else if (_max == 0 || _avaible.size() + _occupied < _max)
 			{
-				x.swap(_create());
-
 				_occupied++;
 
-				break;
+				return move(_createItem());
 			}
 			else
 			{
@@ -80,20 +68,21 @@ private:
 		return move(x);
 	}
 
-	Pool(function<X*()> f, size_t max)
-		:_max(max), _create([f](){return move(unique_ptr<X>(f()));})
+	Pool(size_t max, Creator&& creator, Deleter&& deleter)
+		:_max(max), _creator(forward<Creator>(creator))
+		,_deleter(forward<Deleter>(deleter))
 	{
 	}
 
-	Pool(function<unique_ptr<X>()> f, size_t max)
-		:_max(max), _create(f)
-	{
-	}
+	// Pool(size_t max, const Creator& creator,const Deleter& deleter)
+	// 	:_max(max), _creator(creator) ,_deleter(deleter)
+	// {
+	// }
 	
 
 	void put(X* px)
 	{
-		unique_ptr<X> x(px);
+		StorageType x(px, _deleter);
 
 		auto ul = unique_lock<mutex>(_mtx);
 
@@ -106,13 +95,71 @@ private:
 		_cond.notify_one();
 	}
 
+	StorageType _createItem()
+	{
+		return move(StorageType(_creator(), _deleter));
+	}
+
 private:
-	function<unique_ptr<X>()>		_create;
+	
 	size_t							_max = 0;
+	size_t							_occupied = 0;
 	mutex							_mtx;
 	condition_variable				_cond;
-	deque<unique_ptr<X>>			_avaible;
-	size_t							_occupied = 0;
+	deque<StorageType>				_avaible;
+	Creator							_creator;
+	Deleter							_deleter;
 };
 
-MYSPACE_END
+
+class PoolFactory
+{
+	template<class X>
+	class DefaultCreator
+	{
+	public:
+		X* operator()() const
+		{
+			return new X();
+		}
+	};
+public:
+	template<class X>
+	static auto create(size_t max = 0)
+	-> shared_ptr<Pool<X, DefaultCreator<X>, default_delete<X>>>
+	{
+		typedef Pool<X, DefaultCreator<X>, default_delete<X>> PoolType;
+
+		return shared_ptr<PoolType>(new PoolType(max, DefaultCreator<X>(), default_delete<X>() ));
+	}
+
+	template<class X, class Creator>
+	static auto create(size_t max, Creator&& creator)
+	-> shared_ptr<Pool<X, Creator, default_delete<X>>>
+	{
+		typedef Pool<X, Creator, default_delete<X>> PoolType;
+
+		return shared_ptr<PoolType>(new PoolType(max, forward<Creator>(creator), default_delete<X>() ));
+	}
+
+	template<class X, class Creator>
+	static auto create(size_t max, const Creator& creator)
+	-> shared_ptr<Pool<X, Creator, default_delete<X>>>
+	{
+		typedef Pool<X, Creator, default_delete<X>> PoolType;
+
+		return shared_ptr<PoolType>(new PoolType(max, move(Creator(creator)),default_delete<X>() ));
+	}
+
+	template<class X, class Creator, class Deleter>
+	static auto create(size_t max, Creator&& creator, Deleter&& deleter)
+	-> shared_ptr<Pool<X, Creator, Deleter>>
+	{
+		typedef Pool<X, Creator, Deleter> PoolType;
+
+		return shared_ptr<PoolType>(new PoolType(max, forward<Creator>(creator), forward<Deleter>(deleter)));
+	}
+};
+
+
+myspace_end

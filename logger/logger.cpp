@@ -2,8 +2,8 @@
 #include "myspace/strings/strings.hpp"
 #include "myspace/time/time.hpp"
 #include "myspace/path/path.hpp"
-MYSPACE_BEGIN
+myspace_begin
 
 Logger logger;
 
-MYSPACE_END
+myspace_end

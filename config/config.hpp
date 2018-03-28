@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/strings/strings.hpp"
 #include "myspace/exception/exception.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class Config
 {
@@ -82,4 +82,4 @@ public:
 private:
 	unordered_map<string, unordered_map<string, string>> _dict;
 };
-MYSPACE_END
+myspace_end

@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class Strings
 {
@@ -206,5 +206,5 @@ private:
 	stringstream _ss;
 };
 
-MYSPACE_END
+myspace_end
 

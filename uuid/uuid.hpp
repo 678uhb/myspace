@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class UUID
 {
@@ -11,7 +11,7 @@ public:
 
 	static string gen()
 	{
-#ifdef MS_WINDOWS
+#ifdef myspace_windows
 		GUID guid;
 		string uuid;
 		::CoCreateGuid(&guid);
@@ -41,7 +41,7 @@ public:
 		}
 		return move(uuid);
 #endif
-#ifdef MS_LINUX
+#ifdef myspace_linux
 		uuid_t uid;
 		uuid_generate(uid);
 		stringstream ss;
@@ -53,4 +53,4 @@ public:
 
 };
 
-MYSPACE_END
+myspace_end

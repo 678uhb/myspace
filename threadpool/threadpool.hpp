@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/critical/critical.hpp"
 #include "myspace/mutex/mutex.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class ThreadPool
 {
@@ -111,4 +111,4 @@ private:
 
 extern ThreadPool threadpool;
 
-MYSPACE_END
+myspace_end

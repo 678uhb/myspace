@@ -1,10 +1,10 @@
 
 #pragma once
 
-#include "myspace/config.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/annoymous/annoymous.hpp"
 
-MYSPACE_BEGIN
+myspace_begin
 
 class Scope 
 {
@@ -43,4 +43,4 @@ private:
 
 #define DEFER(f) ANNOYMOUS(Scope)([&](){f;})
 
-MYSPACE_END
+myspace_end

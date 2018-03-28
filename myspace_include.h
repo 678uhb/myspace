@@ -1,29 +1,19 @@
-#pragma once
-// platform
-#if defined(_WIN32) || defined(_WIN64)
-#define MS_WINDOWS
-#elif defined(__linux__)
-#define MS_LINUX
-#else
-#define MS_UNKNOWN_OS
-#endif
-// compiler
-#if defined(_GNUC_)
-#define MS_COMPILER_GCC
-#elif defined(_MSC_VER)
-#define MS_COMPILER_MSVC _MSC_VER
-#else
-#define MS_COMPILER_UNKOWN
-#endif
 
+
+#pragma once
+
+#include "myspace/myspace_config.h"
 // system headers
-#if defined(MS_WINDOWS)
+#if defined(myspace_windows)
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+
 #ifndef NOMINMAX
 #define  NOMINMAX
 #endif
+
 #undef FD_SETSIZE
 #define FD_SETSIZE  1024*1024
 
@@ -34,7 +24,9 @@
 #include <corecrt_io.h>
 #include <Objbase.h>
 #pragma comment(lib, "ws2_32.lib")
-#elif defined(MS_LINUX)
+
+#elif defined(myspace_linux)
+
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -43,9 +35,13 @@
 #include <sys/types.h>
 #include <uuid/uuid.h>
 #include <sys/epoll.h>
+
 #else
-#error unknown platform
+
+#error "unknown platform"
+
 #endif
+
 // c headers
 #include <cerrno>
 #include <cstdint>
@@ -86,5 +82,5 @@ using namespace chrono;
 using namespace this_thread;
 
 
-#define MYSPACE_BEGIN namespace myspace {
-#define MYSPACE_END   }
+#define myspace_begin namespace myspace {
+#define myspace_end   }
