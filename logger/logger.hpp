@@ -77,6 +77,11 @@ public:
 		return *this;
 	}
 
+	Level getLevel()
+	{
+		return _level;
+	}
+
 	template<class... Targs>
 	Logger& printDebug(const char* file, int line, Targs&&... args)
 	{
@@ -133,11 +138,13 @@ private:
 	deque<shared_ptr<Sink>>						_sinks;
 };
 
-#define debug(...)  printDebug(__FILE__,__LINE__,##__VA_ARGS__)
-#define warn(...)	printWarn(__FILE__,__LINE__,##__VA_ARGS__)
-#define info(...)	printInfo(__FILE__,__LINE__,##__VA_ARGS__)
-#define error(...)  printError(__FILE__,__LINE__,##__VA_ARGS__)
 
 extern Logger logger;
+
+
+#define my_debug(...)  if(logger.getLevel() <= Logger::Debug  ) {logger.printDebug(__FILE__,__LINE__,##__VA_ARGS__);}
+#define my_info(...)	if(logger.getLevel() <= Logger::Info  ){  logger.printInfo(__FILE__,__LINE__,##__VA_ARGS__);}
+#define my_warn(...)	if(logger.getLevel() <= Logger::Warn  ){ logger.printWarn(__FILE__,__LINE__,##__VA_ARGS__) ;}
+#define my_error(...)  if(logger.getLevel() <= Logger::Error  ){  logger.printError(__FILE__,__LINE__,##__VA_ARGS__);}
 
 myspace_end
