@@ -44,19 +44,19 @@ public:
 
 						key = Strings::strip(line.substr(0, pos));
 
-						value = strings::strip(line.substr(pos + 1));
+						value = Strings::strip(line.substr(pos + 1));
 
 						_dict[section][key] = value;
 					}
 					else
 					{
-						line = String::strip(line.pop_back());
+						line = Strings::strip(line.pop_back());
 
 						auto pos = line.find_first_of('=');
 
 						key = Strings::strip(line.substr(0, pos));
 
-						value = strings::strip(line.substr(pos + 1));
+						value = Strings::strip(line.substr(pos + 1));
 
 						multiline = true;
 					}
@@ -73,7 +73,7 @@ public:
 					}
 					else
 					{
-						value += String::strip(line.pop_back());
+						value += Strings::strip(line.pop_back());
 					}
 				}
 			}
