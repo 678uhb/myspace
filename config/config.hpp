@@ -50,7 +50,8 @@ public:
 					}
 					else
 					{
-						line = Strings::strip(line.pop_back());
+						line.pop_back();
+						line = Strings::strip(line);
 
 						auto pos = line.find_first_of('=');
 
@@ -73,7 +74,8 @@ public:
 					}
 					else
 					{
-						value += Strings::strip(line.pop_back());
+						line.pop_back();
+						value += Strings::strip(line);
 					}
 				}
 			}
