@@ -66,14 +66,14 @@ public:
 
 		if (itr == _dict.end())
 		{
-			THROW("section (", section, ") not found");
+			my_throw("section (", section, ") not found");
 		}
 
 		auto iitr = itr->second.find(key);
 
 		if (iitr == itr->second.end())
 		{
-			THROW("key (", key, ") not found");
+			my_throw("key (", key, ") not found");
 		}
 
 		return StringStream(iitr->second);

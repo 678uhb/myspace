@@ -31,8 +31,8 @@ public:
 		addr.sin_port = htons(port);
 		addr.sin_addr.s_addr = INADDR_ANY;
 
-		IF_THROW(0 != ::bind(sock, (sockaddr*)&addr, sizeof(addr)));
-		IF_THROW(0 != ::listen(sock, 1024));
+		if_throw(0 != ::bind(sock, (sockaddr*)&addr, sizeof(addr)));
+		if_throw(0 != ::listen(sock, 1024));
 
 		xs.dismiss();
 		_sock = sock;

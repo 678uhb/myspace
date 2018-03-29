@@ -101,9 +101,9 @@ private:
 	string	_desc;
 };
 
-#define THROW(...) Exception::Throw(__FILE__, __LINE__, ##__VA_ARGS__);
+#define my_throw(...) myspace::Exception::Throw(__FILE__, __LINE__, ##__VA_ARGS__);
 
-#define IF_THROW(x) if((x)) THROW(#x);
+#define if_throw(x) if((x)) my_throw(#x);
 
 
 myspace_end
