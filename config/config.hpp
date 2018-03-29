@@ -15,8 +15,14 @@ public:
 
 	Config(const string& path)
 	{
+		bool multiline = false;
+		
 		string line;
-		string section = "this";
+		
+		string section;
+		
+		string key, value;
+
 		for (ifstream fs(path); getline(fs, line); )
 		{
 			line = Strings::strip(line);
@@ -30,10 +36,46 @@ public:
 			}
 			else
 			{
-				auto pos = line.find_first_of('=');
-				string key = move(line.substr(0, pos));
-				string value = move(line.substr(pos + 1));
-				_dict[section][move(key)] = value;
+				if(!multiline)
+				{
+					if (line.back() != '\\')
+					{
+						auto pos = line.find_first_of('=');
+
+						key = Strings::strip(line.substr(0, pos));
+
+						value = strings::strip(line.substr(pos + 1));
+
+						_dict[section][key] = value;
+					}
+					else
+					{
+						line = String::strip(line.pop_back());
+
+						auto pos = line.find_first_of('=');
+
+						key = Strings::strip(line.substr(0, pos));
+
+						value = strings::strip(line.substr(pos + 1));
+
+						multiline = true;
+					}
+				}
+				else
+				{
+					if (line.back() != '\\')
+					{
+						multiline = false;
+
+						value += line;
+
+						_dict[section][key] = value;
+					}
+					else
+					{
+						value += String::strip(line.pop_back());
+					}
+				}
 			}
 		}
 	}
