@@ -109,6 +109,5 @@ private:
 	list<thread>						_threads;
 };
 
-extern ThreadPool threadpool;
 
 myspace_end

@@ -29,7 +29,7 @@ configure_file (
 	)
 
 SET(src ${src} ${PROJECT_SOURCE_DIR}/logger/logger.cpp) 
-SET(src ${src} ${PROJECT_SOURCE_DIR}/threadpool/threadpool.cpp) 
+# SET(src ${src} ${PROJECT_SOURCE_DIR}/threadpool/threadpool.cpp) 
 
 ADD_LIBRARY(myspace SHARED ${src}) 
 ADD_LIBRARY(myspace_static STATIC ${src})

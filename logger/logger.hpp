@@ -142,9 +142,14 @@ private:
 extern Logger logger;
 
 
-#define my_debug(...)  if(logger.getLevel() <= Logger::Debug  ) {logger.printDebug(__FILE__,__LINE__,##__VA_ARGS__);}
-#define my_info(...)	if(logger.getLevel() <= Logger::Info  ){  logger.printInfo(__FILE__,__LINE__,##__VA_ARGS__);}
-#define my_warn(...)	if(logger.getLevel() <= Logger::Warn  ){ logger.printWarn(__FILE__,__LINE__,##__VA_ARGS__) ;}
-#define my_error(...)  if(logger.getLevel() <= Logger::Error  ){  logger.printError(__FILE__,__LINE__,##__VA_ARGS__);}
+#define my_debug(...)  {if(logger.getLevel() <= Logger::Debug  ) {logger.printDebug(__FILE__,__LINE__,##__VA_ARGS__);}}
+#define my_info(...)	{if(logger.getLevel() <= Logger::Info  ){  logger.printInfo(__FILE__,__LINE__,##__VA_ARGS__);}}
+#define my_warn(...)	{if(logger.getLevel() <= Logger::Warn  ){ logger.printWarn(__FILE__,__LINE__,##__VA_ARGS__) ;}}
+#define my_error(...)  {if(logger.getLevel() <= Logger::Error  ){  logger.printError(__FILE__,__LINE__,##__VA_ARGS__);}}
+
+#define my_debug_seconds(x, ...)  if_past_seconds(x) my_debug(__VA_ARGS__);
+#define my_info_seconds(x, ...)	  if_past_seconds(x) my_info(__VA_ARGS__);
+#define my_warn_seconds(x, ...)	  if_past_seconds(x) my_warn(__VA_ARGS__);
+#define my_error_seconds(x, ...)  if_past_seconds(x) my_error(__VA_ARGS__);
 
 myspace_end

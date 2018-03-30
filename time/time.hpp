@@ -31,4 +31,14 @@ public:
 	}
 };
 
+
+#define if_past_seconds(x)\
+if( []()\
+{\
+	 static time_t t = 0; \
+	 auto now = time(0);\
+	 if( t + (x) > now ) { return false; } \
+	 else { t = now; return true; } \
+} ()  )
+
 myspace_end

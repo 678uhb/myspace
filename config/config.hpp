@@ -27,8 +27,9 @@ public:
 		{
 			line = Strings::strip(line);
 
-			if (line.empty())
-				continue;
+			if (line.empty()) continue;
+
+			if(line[0] == '#' || line[0] == ';') continue;
 
 			if (line[0] == '[')
 			{
@@ -47,6 +48,7 @@ public:
 						value = Strings::strip(line.substr(pos + 1));
 
 						_dict[section][key] = value;
+						value.clear();
 					}
 					else
 					{
@@ -71,6 +73,7 @@ public:
 						value += line;
 
 						_dict[section][key] = value;
+						value.clear();
 					}
 					else
 					{
@@ -80,6 +83,8 @@ public:
 				}
 			}
 		}
+
+		if(!value.empty()) _dict[section][key] = value;
 	}
 
 
