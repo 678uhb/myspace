@@ -3,7 +3,7 @@
 
 #include "myspace/myspace_include.h"
 #include "myspace/memory/memory.hpp"
-myspace_begin
+MYSPACE_BEGIN
 
 #ifdef myspace_linux
 
@@ -153,5 +153,5 @@ private:
                                                         "0123456789+/";
 };
 
-myspace_end
+MYSPACE_END
 

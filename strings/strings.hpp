@@ -3,7 +3,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class Strings
 {
@@ -206,5 +206,5 @@ private:
 	stringstream _ss;
 };
 
-myspace_end
+MYSPACE_END
 

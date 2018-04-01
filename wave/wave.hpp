@@ -2,7 +2,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 enum AudioFormat {
 	Pcm = 1,
@@ -54,4 +54,4 @@ struct WaveHead {
 
 
 
-myspace_end
+MYSPACE_END

@@ -5,7 +5,7 @@
 #include "myspace/strings/strings.hpp"
 #include "myspace/path/path.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 
 class Exception : public exception 
@@ -101,9 +101,9 @@ private:
 	string	_desc;
 };
 
-#define my_throw(...) myspace::Exception::Throw(__FILE__, __LINE__, ##__VA_ARGS__);
+#define MYSPACE_THROW(...) myspace::Exception::Throw(__FILE__, __LINE__, ##__VA_ARGS__);
 
-#define if_throw(x) if((x)) my_throw(#x);
+#define MYSPACE_IF_THROW(x) if((x)) MYSPACE_THROW(#x);
 
 
-myspace_end
+MYSPACE_END

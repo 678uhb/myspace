@@ -3,7 +3,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 
 template<class Hold,
@@ -21,4 +21,4 @@ public:
 	}
 };
 
-myspace_end
+MYSPACE_END

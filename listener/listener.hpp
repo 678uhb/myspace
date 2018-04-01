@@ -4,7 +4,7 @@
 #include "myspace/myspace_include.h"
 #include "myspace/socket/socket.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 
 class Listener
@@ -31,8 +31,8 @@ public:
 		addr.sin_port = htons(port);
 		addr.sin_addr.s_addr = INADDR_ANY;
 
-		if_throw(0 != ::bind(sock, (sockaddr*)&addr, sizeof(addr)));
-		if_throw(0 != ::listen(sock, 1024));
+		MYSPACE_IF_THROW(0 != ::bind(sock, (sockaddr*)&addr, sizeof(addr)));
+		MYSPACE_IF_THROW(0 != ::listen(sock, 1024));
 
 		xs.dismiss();
 		_sock = sock;
@@ -80,4 +80,4 @@ private:
 };
 
 
-myspace_end
+MYSPACE_END

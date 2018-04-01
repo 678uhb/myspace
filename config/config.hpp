@@ -6,7 +6,7 @@
 #include "myspace/strings/strings.hpp"
 #include "myspace/exception/exception.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class Config
 {
@@ -115,14 +115,14 @@ public:
 
 		if (itr == _dict.end())
 		{
-			my_throw("section (", section, ") not found");
+			MYSPACE_THROW("section (", section, ") not found");
 		}
 
 		auto iitr = itr->second.find(key);
 
 		if (iitr == itr->second.end())
 		{
-			my_throw("key (", key, ") not found");
+			MYSPACE_THROW("key (", key, ") not found");
 		}
 
 		return StringStream(iitr->second);
@@ -131,4 +131,4 @@ public:
 private:
 	unordered_map<string, unordered_map<string, string>> _dict;
 };
-myspace_end
+MYSPACE_END

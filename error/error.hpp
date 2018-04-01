@@ -4,7 +4,7 @@
 #include "myspace/myspace_include.h"
 #include "myspace/scope/scope.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 
 class Error
@@ -45,7 +45,7 @@ public:
 	{
 #ifdef myspace_windows
 		LPVOID buf = nullptr;
-		DEFER(::LocalFree(buf));
+		MYSPACE_DEFER(::LocalFree(buf));
 		::FormatMessage(
 			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
 			nullptr, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -60,4 +60,4 @@ public:
 };
 
 
-myspace_end
+MYSPACE_END

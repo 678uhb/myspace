@@ -83,5 +83,5 @@ using namespace chrono;
 using namespace this_thread;
 
 
-#define myspace_begin namespace myspace {
-#define myspace_end   }
+#define MYSPACE_BEGIN namespace myspace {
+#define MYSPACE_END   }

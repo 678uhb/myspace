@@ -1,7 +1,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 template<class X, class Creator, class Deleter>
 class Pool: public enable_shared_from_this<Pool<X, Creator, Deleter>>
@@ -162,4 +162,4 @@ public:
 };
 
 
-myspace_end
+MYSPACE_END

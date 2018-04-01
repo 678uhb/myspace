@@ -6,7 +6,7 @@
 #include "myspace/detector/detector.hpp"
 #include "myspace/socket/socketopt.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class Socket
 {
@@ -293,7 +293,7 @@ public:
 	bool isConnected() 
 	{
 		auto isblocked = _isblocked;
-		DEFER(setBlock(isblocked));
+		MYSPACE_DEFER(setBlock(isblocked));
 	again:
 		char c;
 		setNonBlock();
@@ -462,4 +462,4 @@ private:
 
 
 
-myspace_end
+MYSPACE_END

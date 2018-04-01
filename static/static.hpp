@@ -1,6 +1,6 @@
 
 #pragma once
-#define buildstr(x)	#x
-#define _source_pos(file, line) file ":" buildstr(line)
-#define source_pos	 _source_pos(__FILE__, __LINE__)
+#define __myspace_buildstr(x)	#x
+#define __MYSPACE_SOURCE_POS(file, line) file ":" __myspace_buildstr(line)
+#define MYSPACE_SOURCE_POS	 __MYSPACE_SOURCE_POS(__FILE__, __LINE__)
 

@@ -2,7 +2,7 @@
 #include "myspace/myspace_include.h"
 #include "myspace/wave/wave.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class WavFile 
 {
@@ -74,4 +74,4 @@ private:
 };
 
 
-myspace_end
+MYSPACE_END

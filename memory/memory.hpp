@@ -3,7 +3,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 template<class t, class... a>
 typename enable_if<!is_array<t>::value, unique_ptr<t>>::type
@@ -27,5 +27,5 @@ shared_ptr<t> new_shared(a&&... args)
 	return move(make_shared<t>(forward<a>(args)...));
 }
 
-myspace_end
+MYSPACE_END
 

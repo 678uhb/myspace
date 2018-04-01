@@ -3,10 +3,10 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
-#define __annoymous_t(type,token,line)	type token##line
-#define _annoymous_t(type,line)  __annoymous_t(type,annoymous,line)
-#define ANNOYMOUS(type)   _annoymous_t(type, __LINE__)
+#define ____myspace_annoymous_t(type,token,line)	type token##line
+#define __myspace_annoymous_t(type,line)  ____myspace_annoymous_t(type,annoymous,line)
+#define MYSPACE_ANNOYMOUS(type)   __myspace_annoymous_t(type, __LINE__)
 
-myspace_end
+MYSPACE_END

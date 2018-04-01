@@ -3,7 +3,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class Time
 {
@@ -32,7 +32,7 @@ public:
 };
 
 
-#define if_past_seconds(x)\
+#define MYSPACE_IF_PAST_SECONDS(x)\
 if( []()\
 {\
 	 static time_t t = 0; \
@@ -41,4 +41,4 @@ if( []()\
 	 else { t = now; return true; } \
 } ()  )
 
-myspace_end
+MYSPACE_END

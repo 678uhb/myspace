@@ -2,7 +2,7 @@
 #include "myspace/myspace_include.h"
 #include "myspace/wave/wave.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class WaveTool
 {
@@ -76,4 +76,4 @@ public:
 
 };
 
-myspace_end
+MYSPACE_END

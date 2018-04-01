@@ -3,14 +3,18 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
-#define if_lock(mtx) if(auto __ul = unique_lock<mutex>(mtx))
+#define MYSPACE_IF_LOCK(mtx) \
+	if(auto __ul = unique_lock<mutex>(mtx))
 
-#define if_trylock(mtx)									\
+#define MYSPACE_IF_TRYLOCK(mtx)	\
 	if( auto __ul = [&]() {								\
 		auto ul = unique_lock<mutex>(mtx, defer_lock);	\
 		ul.try_lock();									\
 		return move(ul);}())
 
-myspace_end
+#define MYSPACE_FOR_LOCK(mtx)	\
+	for (auto __ul = unique_lock<mutex>(mtx); __ul;)
+
+MYSPACE_END

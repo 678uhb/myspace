@@ -5,7 +5,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class Path
 {
@@ -50,6 +50,6 @@ public:
 	}
 };
 
-myspace_end
+MYSPACE_END
 
 

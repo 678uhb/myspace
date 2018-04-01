@@ -5,7 +5,7 @@
 #include "myspace/memory/memory.hpp"
 #include "myspace/path/path.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class Process
 {
@@ -68,4 +68,4 @@ public:
 	}
 };
 
-myspace_end
+MYSPACE_END

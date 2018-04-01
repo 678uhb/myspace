@@ -8,7 +8,7 @@
 #include "myspace/mutex/mutex.hpp"
 #include "myspace/time/time.hpp"
 #include "myspace/path/path.hpp"
-myspace_begin
+MYSPACE_BEGIN
 
 struct LoggerItem
 {
@@ -141,15 +141,15 @@ private:
 
 extern Logger logger;
 
+MYSPACE_END
 
-#define my_debug(...)  {if(logger.getLevel() <= Logger::Debug  ) {logger.printDebug(__FILE__,__LINE__,##__VA_ARGS__);}}
-#define my_info(...)	{if(logger.getLevel() <= Logger::Info  ){  logger.printInfo(__FILE__,__LINE__,##__VA_ARGS__);}}
-#define my_warn(...)	{if(logger.getLevel() <= Logger::Warn  ){ logger.printWarn(__FILE__,__LINE__,##__VA_ARGS__) ;}}
-#define my_error(...)  {if(logger.getLevel() <= Logger::Error  ){  logger.printError(__FILE__,__LINE__,##__VA_ARGS__);}}
 
-#define my_debug_seconds(x, ...)  if_past_seconds(x) my_debug(__VA_ARGS__);
-#define my_info_seconds(x, ...)	  if_past_seconds(x) my_info(__VA_ARGS__);
-#define my_warn_seconds(x, ...)	  if_past_seconds(x) my_warn(__VA_ARGS__);
-#define my_error_seconds(x, ...)  if_past_seconds(x) my_error(__VA_ARGS__);
+#define MYSPACE_DEBUG(...)  {if(myspace::logger.getLevel() <= myspace::Logger::Debug  ) {myspace::logger.printDebug(__FILE__,__LINE__,##__VA_ARGS__);}}
+#define MYSPACE_INFO(...)	{if(myspace::logger.getLevel() <= myspace::Logger::Info  ){  myspace::logger.printInfo(__FILE__,__LINE__,##__VA_ARGS__);}}
+#define MYSPACE_WARN(...)	{if(myspace::logger.getLevel() <= myspace::Logger::Warn  ){ myspace::logger.printWarn(__FILE__,__LINE__,##__VA_ARGS__) ;}}
+#define MYSPACE_ERROR(...)  {if(myspace::logger.getLevel() <= myspace::Logger::Error  ){  myspace::logger.printError(__FILE__,__LINE__,##__VA_ARGS__);}}
 
-myspace_end
+#define MYSPACE_DEBUG_SECONDS(x, ...)  MYSPACE_IF_PAST_SECONDS(x) MYSPACE_DEBUG(__VA_ARGS__);
+#define MYSPACE_INFO_SECONDS(x, ...)	  MYSPACE_IF_PAST_SECONDS(x) MYSPACE_INFO(__VA_ARGS__);
+#define MYSPACE_WARN_SECONDS(x, ...)	  MYSPACE_IF_PAST_SECONDS(x) MYSPACE_WARN(__VA_ARGS__);
+#define MYSPACE_ERROR_SECONDS(x, ...)  MYSPACE_IF_PAST_SECONDS(x) MYSPACE_ERROR(__VA_ARGS__);

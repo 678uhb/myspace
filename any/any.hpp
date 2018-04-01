@@ -2,7 +2,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class Any
 {
@@ -148,4 +148,4 @@ private:
 	Base* _ptr = nullptr;
 };
 
-myspace_end
+MYSPACE_END

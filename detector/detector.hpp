@@ -6,7 +6,7 @@
 #include "myspace/any/any.hpp"
 #include "myspace/socket/socketopt.hpp"
 
-myspace_begin
+MYSPACE_BEGIN
 
 
 enum DetectType
@@ -322,4 +322,4 @@ typedef Epoll Detector;
 typedef Select Detector;
 #endif
 
-myspace_end
+MYSPACE_END

@@ -3,7 +3,7 @@
 
 #include "myspace/myspace_include.h"
 
-myspace_begin
+MYSPACE_BEGIN
 
 class SocketOpt
 {
@@ -31,5 +31,5 @@ public:
 
 };
 
-myspace_end
+MYSPACE_END
 
