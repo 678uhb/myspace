@@ -95,7 +95,7 @@ public:
 
         for(auto c : src)
         {
-            a3[i++] == (uint8_t)c;
+            a3[i++] = (uint8_t)c;
 
             if(i == 3)
             {
@@ -117,7 +117,7 @@ public:
                 a3[j] = 0;
             }
 
-            a3_to_a4(a4, a3);
+            a3_to_a4(a3, a4);
 
             for(int j = 0; j < i + 1; ++j)
             {
@@ -140,7 +140,7 @@ private:
         return (length + 2 - ((length + 2) % 3)) / 3 * 4;
     }            
 
-    static void a3_to_a4(unsigned char * a4, unsigned char * a3) 
+    static void a3_to_a4(unsigned char * a3, unsigned char * a4) 
     {
         a4[0] = (a3[0] & 0xfc) >> 2;
         a4[1] = ((a3[0] & 0x03) << 4) + ((a3[1] & 0xf0) >> 4);
