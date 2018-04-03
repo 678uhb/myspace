@@ -31,7 +31,7 @@ public:
     {
         if(src.empty()) return "";
 
-        const size_t srclen = srcleft;
+        const size_t srclen = src.size();
         
         char* psrc = (char*)src.c_str();
 
@@ -41,7 +41,7 @@ public:
 
         size_t* psrcleft = &srcleft;
 
-        const size_t dstlen = max(srclen, 8);
+        const size_t dstlen = max(srclen,size_t(8));
 
         auto dst = new_unique<char[]>(dstlen);
 
