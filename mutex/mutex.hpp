@@ -17,4 +17,7 @@ MYSPACE_BEGIN
 #define MYSPACE_FOR_LOCK(mtx)	\
 	for (auto __ul = unique_lock<mutex>(mtx); __ul;)
 
+#define MYSPACE_SYNCHRONIZED \
+	if (  auto __ul = [](){ static mutex mtx; return unique_lock<mutex>(mtx); }()  )
+
 MYSPACE_END

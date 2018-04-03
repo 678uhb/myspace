@@ -5,7 +5,7 @@
 #include "myspace/memory/memory.hpp"
 MYSPACE_BEGIN
 
-#ifdef myspace_linux
+#ifdef MYSPACE_LINUX
 
 class Iconv
 {

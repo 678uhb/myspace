@@ -11,7 +11,7 @@ MYSPACE_BEGIN
 
 enum DetectType
 {
-#ifdef myspace_linux
+#ifdef MYSPACE_LINUX
 	READ = EPOLLIN,
 	WRITE = EPOLLOUT,
 	EXCEP = EPOLLERR,
@@ -35,7 +35,7 @@ namespace DetectorImpl
 }
 
 
-#ifdef myspace_linux
+#ifdef MYSPACE_LINUX
 class Epoll
 {
 public:
@@ -316,7 +316,7 @@ private:
 	unique_ptr<fd_set> _e = new_unique<fd_set>();
 };
 
-#ifdef myspace_linux
+#ifdef MYSPACE_LINUX
 typedef Epoll Detector;
 #else
 typedef Select Detector;

@@ -1,3 +1,3 @@
 
-/* #undef myspace_linux */
-#define myspace_windows
+#define MYSPACE_LINUX
+/* #undef MYSPACE_WINDOWS */

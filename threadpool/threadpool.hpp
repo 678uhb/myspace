@@ -4,6 +4,7 @@
 #include "myspace/myspace_include.h"
 #include "myspace/critical/critical.hpp"
 #include "myspace/mutex/mutex.hpp"
+#include "myspace/scope/scope.hpp"
 
 MYSPACE_BEGIN
 
@@ -40,13 +41,13 @@ public:
 		_jobs.notify_all();
 
 		MYSPACE_FOR_LOCK(_threads)
-		{
-			if (_threads == 0)
+		{	
+			if(_threads.empty())
 				return;
-			
+
 			_threads.wait_for(__ul, seconds(1), [this]()
 			{
-				return _threads == 0;
+				return _threads.empty();
 			});
 		}
 	}
@@ -76,11 +77,18 @@ private:
 
 			MYSPACE_IF_LOCK(_threads)
 			{
-				if(_threads < _maxThreads)
+				if(_threads.size() < _maxThreads)
 				{
-					++_threads;
+					try
+					{
+						auto t = thread([this](){ this->workerProc(); });
 
-					thread([this](){ this->workerProc(); }).detach();
+						_threads[t.get_id()] = move(t);
+					}
+					catch(...)
+					{
+						
+					}
 				}
 			}
 		}
@@ -92,6 +100,28 @@ private:
 
 	void workerProc()
 	{
+		MYSPACE_DEFER
+		(
+			MYSPACE_IF_LOCK(_threads)
+			{
+				auto id = this_thread::get_id();
+
+				auto itr = _threads.find(id);
+
+				if(itr != _threads.end())
+				{
+					auto t = move(itr->second);
+
+					_threads.erase(itr);
+
+					_threads.notify_one();
+
+					t.detach();
+				}
+			}
+		);
+
+
 		for (bool wait = true; !_stop ; )
 		{
 			function<void()> job;
@@ -102,13 +132,6 @@ private:
 				{
 					if(!wait)
 					{
-						MYSPACE_IF_LOCK(_threads)
-						{
-							--_threads;
-						}
-
-						_threads.notify_one();
-
 						return;
 					}
 
@@ -149,8 +172,9 @@ private:
 
 	Critical<list<function<void()>>>	_jobs;
 
-	Critical<size_t>					_threads = 0;
+	Critical<unordered_map<thread::id, thread>>				_threads;
 };
 
+MYSPACE_API extern ThreadPool threadpool;
 
 MYSPACE_END

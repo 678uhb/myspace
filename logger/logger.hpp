@@ -33,11 +33,14 @@ class ConsoleSink : public Sink
 public:
 	void put(shared_ptr<LoggerItem> item)
 	{
-		cout << "[" << Time::format(system_clock::to_time_t(item->_time))
-			<< "][" << Path::basename(item->_file) << ":" << item->_line << "]:"
-			<< item->_content;
-		if (item->_content.empty() || item->_content.back() != '\n')
-			cout << endl;
+		MYSPACE_SYNCHRONIZED
+		{
+			cout << "[" << Time::format(system_clock::to_time_t(item->_time))
+				<< "][" << Path::basename(item->_file) << ":" << item->_line << "]:"
+				<< item->_content;
+			if (item->_content.empty() || item->_content.back() != '\n')
+				cout << endl;
+		}
 	}
 };
 
@@ -139,7 +142,7 @@ private:
 };
 
 
-extern Logger logger;
+MYSPACE_API extern Logger logger;
 
 MYSPACE_END
 

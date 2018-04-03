@@ -13,6 +13,7 @@
 #include "myspace/process/process.hpp"
 #include "myspace/pool/pool.hpp"
 #include "myspace/codec/codec.hpp"
+#include "myspace/coroutine/coroutine.hpp"
 
 #include "myspace/wave/wave.hpp"
 #include "myspace/wave/wavefile.hpp"

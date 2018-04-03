@@ -327,7 +327,7 @@ public:
 
 	static void close(int sock)
 	{
-#ifdef myspace_windows
+#ifdef MYSPACE_WINDOWS
 		::closesocket(sock);
 #else
 		::close(sock);
@@ -443,7 +443,7 @@ private:
 	int getSockError()
 	{
 		int err = 0;
-#if defined(myspace_windows)
+#if defined(MYSPACE_WINDOWS)
 		int len = sizeof(err);
 #else
 		socklen_t len = sizeof(err);

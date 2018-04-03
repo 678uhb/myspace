@@ -12,7 +12,7 @@ class Error
 public:
 	enum 
 	{
-#ifdef myspace_windows
+#ifdef MYSPACE_WINDOWS
 		wouldblock = WSAEWOULDBLOCK,
 		//err_again = EAGAIN,
 		inprogress = WSAEINPROGRESS,
@@ -31,7 +31,7 @@ public:
 
 	static int lastNetError()
 	{
-#ifdef myspace_windows
+#ifdef MYSPACE_WINDOWS
 		int ec = ::WSAGetLastError();
 		if (ec) return ec;
 		return ::GetLastError();
@@ -43,7 +43,7 @@ public:
 
 	static string strerror(int ec)
 	{
-#ifdef myspace_windows
+#ifdef MYSPACE_WINDOWS
 		LPVOID buf = nullptr;
 		MYSPACE_DEFER(::LocalFree(buf));
 		::FormatMessage(

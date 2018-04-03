@@ -4,6 +4,6 @@
 #include "myspace/path/path.hpp"
 MYSPACE_BEGIN
 
-Logger logger;
+MYSPACE_API Logger logger;
 
 MYSPACE_END

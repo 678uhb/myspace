@@ -4,7 +4,7 @@
 
 #include "myspace/myspace_config.h"
 // system headers
-#if defined(myspace_windows)
+#if defined(MYSPACE_WINDOWS)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -25,7 +25,7 @@
 #include <Objbase.h>
 #pragma comment(lib, "ws2_32.lib")
 
-#elif defined(myspace_linux)
+#elif defined(MYSPACE_LINUX)
 
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -36,7 +36,7 @@
 #include <uuid/uuid.h>
 #include <sys/epoll.h>
 #include <iconv.h>
-
+#include <ucontext.h>
 #else
 
 #error "unknown platform"
@@ -81,7 +81,21 @@
 using namespace std;
 using namespace chrono;
 using namespace this_thread;
+using namespace placeholders;
 
+#if defined(MYSPACE_WINDOWS) && defined(MYSPACE_SHARED)
+
+# ifdef MYSPACE_EXPORTS
+# define MYSPACE_API  __declspec(dllexport)
+# else
+# define MYSPACE_API  __declspec(dllimport)
+# endif
+
+#else
+
+#define MYSPACE_API
+
+#endif
 
 #define MYSPACE_BEGIN namespace myspace {
 #define MYSPACE_END   }

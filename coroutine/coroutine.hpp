@@ -2,166 +2,150 @@
 #pragma once
 
 #include "myspace/myspace_include.h"
+#include "myspace/logger/logger.hpp"
+#include "myspace/exception/exception.hpp"
 
 MYSPACE_BEGIN
 
-#ifdef myspace_windows
+#ifdef MYSPACE_WINDOWS
 
-template<class Type>
-class Coroutine 
+class Fiber
 {
 public:
-	template<class Functype, class... Argstype>
-	Coroutine(Functype&& fn, Argstype&&... args)
-		:_callee_fn(std::forward<functype>(fn)) 
+	template<class Function, class... Arguments>
+	Fiber(Function&& func, Arguments&&... args)
 	{
-		this->_caller = ::ConvertThreadToFiberEx(this, FIBER_FLAG_FLOAT_SWITCH);
+		_caller = ::ConvertThreadToFiberEx(this, FIBER_FLAG_FLOAT_SWITCH);
 
-		if (!this->_caller) 
+		if (!_caller)
 		{
-			this->_caller_is_callee = true;
+			_callerIsFiber = true;
 
-			this->_caller = this_coroutine::get_id();
+			_caller = GetCurrentFiber();
 		}
 
-		this->_callee = CreateFiberEx(0, 0, FIBER_FLAG_FLOAT_SWITCH, &Coroutine::callee_proc, this);
+		MYSPACE_IF_THROW(!_caller);
 
-		::SwitchToFiber(this->_callee);
+		auto f = bind(forward<Function>(func), forward<Arguments>(args)...);
+
+		_func = [f](Fiber& x) { f(x); };
+
+		_callee = ::CreateFiberEx(1024, 1024, FIBER_FLAG_FLOAT_SWITCH, &Fiber::proc, this);
+
+		MYSPACE_IF_THROW(!_callee);
 	}
 
-	~Coroutine() 
+	Fiber(Fiber&&)
 	{
-		clean_callee();
 	}
 
-	operator bool() 
+	~Fiber()
 	{
-		return _callee != nullptr;
-	}
+		_callerIsQuit = true;
 
-	Type yield(const Type& x)
-	{
-		_yield_type = x;
-
-		switch_to_caller();
-
-		return move(_resume_type);
-	}
-
-	Type yield(Type&& x) 
-	{
-		_yield_type = move(x);
-
-		switch_to_caller();
-
-		return move(_resume_type);
-	}
-
-	Type resume(const type& x) 
-	{
-		_resume_type = x;
-
-		switch_to_callee();
-
-		return *this;
-	}
-
-	Type resume(type&& x)
-	{
-		_resume_type = move(x);
-
-		switch_to_callee();
-
-		return *this;
-	}
-
-	type get() 
-	{
-		return move(_yield_type);
-	}
-
-private:
-
-	void switch_to_callee() 
-	{
-		if (this->_callee && this->_callee != this_coroutine::get_id()) 
+		if (_callee)
 		{
-			::SwitchToFiber(this->_callee);
-		}
-	}
-
-	void switch_to_caller() 
-	{
-		if (this->_caller && this->_caller != this_coroutine::get_id())
-		{
-			::SwitchToFiber(this->_caller);
-		}
-	}
-
-	void clean_callee() 
-	{
-		switch_to_caller();
-
-		if (!_callee_quit) 
-		{
-			_callee_quit = true;
-
-			if (_callee) 
+			while (!_calleeIsQuit)
 			{
-				::DeleteFiber(_callee);
-
-				_callee = nullptr;
+				resume();
 			}
+
+			::DeleteFiber(_callee);
 		}
 
-		if (!this->_caller_is_callee)
+		if (!_callerIsFiber)
 		{
 			::ConvertFiberToThread();
 		}
 	}
 
-	static void CALLBACK callee_proc(_In_ PVOID lpParameter) 
+	Fiber& resume()
 	{
-		auto co = (Coroutine*)lpParameter;
-
-		if (this_coroutine::get_id() == co->_callee) 
+		if (_caller && _caller != ::GetCurrentFiber())
 		{
-			co->_callee_fn(*co);
-
-			co->clean_callee();
+			::SwitchToFiber(_caller);
 		}
+		else if (!_calleeIsQuit && _callee && _callee != ::GetCurrentFiber())
+		{
+			::SwitchToFiber(_callee);
+		}
+		return *this;
 	}
 
-	bool										_caller_is_callee = false;
+	bool callerIsQuit()
+	{
+		return _callerIsQuit;
+	}
 
-	bool										_callee_quit = false;
+	bool calleeIsQuit()
+	{
+		return _calleeIsQuit;
+	}
 
-	Type										_resume_type;
+private:
 
-	Type										_yield_type;
+	static void CALLBACK proc(_In_ PVOID lpParameter)
+	{
+		Fiber* f = (Fiber*)lpParameter;
 
-	LPVOID										_callee = nullptr;
+		try
+		{
+			if (f->_func)
+			{
+				(f->_func)(*f);
+			}
+		}
+		catch (...)
+		{
+			MYSPACE_ERROR(Exception::dump());
+		}
 
-	LPVOID										_caller = nullptr;
+		f->_calleeIsQuit = true;
 
-	function<void(Coroutine<type>&)>			_callee_fn;
+		f->resume();
+	}
+
+	function<void(Fiber&)>	_func;
+
+	bool 	_callerIsFiber = false;
+
+	bool	_callerIsQuit = false;
+
+	bool	_calleeIsQuit = false;
+
+	LPVOID _caller = nullptr;
+
+	LPVOID _callee = nullptr;
 };
 
-
-
-#include <mmsystem.hpp>
-#pragma comment(lib, "Winmm.lib")
-
-namespace this_coroutine
-{
-	LPVOID get_id() 
-	{
-		return ::GetCurrentFiber();
-	}
-}
+//
+//template<class Function, class... Arguments>
+//auto makeFiber(Function&& func, Arguments&&... args)
+//{
+//	auto f = bind(forward<Function>(func), forward<Arguments>(args)...);
+//
+//	using ReturnType = decltype(f(Fiber<void>)());
+//
+//	return Fiber<ReturnType>(forward<Function>(func), forward<Arguments>(args)...);
+//}
 
 #endif
 
+#ifdef MYSPACE_LINUX
 
+//class Ucontext
+//{
+//public:
+//	Ucontext()
+//	{
+//		::getcontext(&_ctx);
+//		::makecontext(&_ctx);
+//	}
+//
+//private:
+//	ucontext_t _ctx = {0};
+//};
+
+#endif
 
 MYSPACE_END

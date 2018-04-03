@@ -14,7 +14,7 @@ public:
 		auto buf = new_unique<char[]>(128);
 
 		struct tm _tm;
-#ifdef myspace_windows
+#ifdef MYSPACE_WINDOWS
 		::localtime_s(&_tm, &t);
 #else
 		::localtime_r(&t, &_tm);
@@ -28,6 +28,14 @@ public:
 			ret.assign(buf.get(), n);
 
 		return move(ret);
+	}
+
+	template<class Function, class... Arguments>
+	static high_resolution_clock::duration costs(Function&& func, Arguments&&... args)
+	{
+		auto begin = high_resolution_clock::now();
+		func(forward<Arguments>(args)...);
+		return high_resolution_clock::now() - begin;
 	}
 };
 

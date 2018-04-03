@@ -1,3 +1,3 @@
 
-#cmakedefine myspace_linux
-#cmakedefine myspace_windows
+#cmakedefine MYSPACE_LINUX
+#cmakedefine MYSPACE_WINDOWS

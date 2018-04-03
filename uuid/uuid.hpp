@@ -11,7 +11,7 @@ public:
 
 	static string gen()
 	{
-#ifdef myspace_windows
+#ifdef MYSPACE_WINDOWS
 		GUID guid;
 		string uuid;
 		::CoCreateGuid(&guid);
@@ -41,7 +41,7 @@ public:
 		}
 		return move(uuid);
 #endif
-#ifdef myspace_linux
+#ifdef MYSPACE_LINUX
 		uuid_t uid;
 		uuid_generate(uid);
 		stringstream ss;

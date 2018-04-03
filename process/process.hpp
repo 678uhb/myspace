@@ -16,9 +16,9 @@ public:
 
 		auto name = new_unique<char[]>(maxPath);
 		int n = 0;
-#if defined(myspace_windows)
+#if defined(MYSPACE_WINDOWS)
 		n = GetModuleFileName(NULL, name.get(), maxPath);
-#elif defined(myspace_linux)
+#elif defined(MYSPACE_LINUX)
 		n = readlink("/proc/self/exe", name.get(), maxPath);
 #endif
 		if (n <= 0)
@@ -44,7 +44,7 @@ public:
 
 			auto name = new_unique<char[]>(maxPath);
 
-#if defined(myspace_windows)
+#if defined(MYSPACE_WINDOWS)
 
 			auto n = GetCurrentDirectory(maxPath, name.get());
 
@@ -59,7 +59,7 @@ public:
 			return move(string(name.get(), n));
 #endif
 		}
-#if defined(myspace_windows)
+#if defined(MYSPACE_WINDOWS)
 		SetCurrentDirectory(path.c_str());
 #else
 		chdir(path.c_str());
