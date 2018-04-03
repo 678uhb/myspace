@@ -94,17 +94,60 @@ private:
 
 #endif
 
+#ifdef MYSPACE_WINDOWS
+
+wstring toWideChar(uint32_t codepage, const string& src)
+{
+    auto dstlen = ::MultiByteToWideChar(codepage, 0, src.c_str(), -1, nullptr, 0);
+
+    if(dstlen <= 0) return wstring();
+
+    auto dstbuffer = new_unique<wchar_t[]>(dstlen);
+
+    auto n = ::MultiByteToWideChar(codepage, 0, src.c_str(), -1, dstbuffer.get(), dstlen);
+
+    if(n <= 0) return wstring();
+
+    return wstring(dstbuffer.get(), min(n, dstlen));
+}
+
+string toMultiChar(uint32_t codepage, const wstring& src)
+{
+    auto dstlen = ::WideCharToMultiByte(codepage, 0, src.c_str(), src.size(), nullptr, 0, nullptr,nullptr);
+
+    if(dstlen <= 0) return string();
+
+    auto dstbuffer = new_unique<char[]>(dstlen);
+
+    auto n = ::WideCharToMultiByte(codepage, 0, src.c_str(), src.size(), dstbuffer.get(), dstlen, nullptr,nullptr);
+
+    if(n <= 0) return string();
+
+    return string(dstbuffer.get(), min(n, dstlen));
+}
+
+#endif
+
 
 class Codec
 {
 public:
 
-    static string convertGbkToUtf8(const string& gbk)
+    static string convertGbkToUtf8(const string& src)
     {
 #ifdef MYSPACE_LINUX
-        return Iconv("GB2312", "UTF-8").convert(gbk);
+        return Iconv("GB2312", "UTF-8").convert(src);
 #else
-        return "";
+        return toMultiChar(65001, toWideChar(936, src));
+#endif
+    }
+
+    static string convertUtf8ToGbk(const string& src)
+    {
+#ifdef MYSPACE_LINUX
+        return Iconv("UTF-8","GB2312").convert(src);
+#else
+        return toMultiChar(936, toWideChar(65001, src));
 #endif
     }
 
