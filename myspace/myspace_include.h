@@ -2,7 +2,13 @@
 
 #pragma once
 
-#include "myspace/myspace_config.h"
+
+#if defined(_WIN32)
+#define MYSPACE_WINDOWS
+#elif defined(__linux__)
+#define MYSPACE_LINUX
+#endif
+
 // system headers
 #if defined(MYSPACE_WINDOWS)
 

@@ -14,7 +14,7 @@ ELSE ()
     MESSAGE(FATAL_ERROR "unsupported platform: ${CMAKE_SYSTEM_NAME}")  
 ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
-include_directories ("${PROJECT_SOURCE_DIR}/..")
+include_directories ("${PROJECT_SOURCE_DIR}")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     add_compile_options(-std=c++11)
@@ -23,23 +23,22 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_EXE_LINKER_FLAGS "-g -pthread")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-configure_file (
-	"${PROJECT_SOURCE_DIR}/myspace.cmake"
-	"${PROJECT_SOURCE_DIR}/myspace_config.h"
-	)
+SET(MYSPACE_SOURCES ${MYSPACE_SOURCES} 
+${PROJECT_SOURCE_DIR}/myspace/logger/logger.cpp
+${PROJECT_SOURCE_DIR}/myspace/threadpool/threadpool.cpp) 
 
-SET(src ${src} 
-${PROJECT_SOURCE_DIR}/logger/logger.cpp
-${PROJECT_SOURCE_DIR}/threadpool/threadpool.cpp) 
-# SET(src ${src} ${PROJECT_SOURCE_DIR}/threadpool/threadpool.cpp) 
-
-ADD_LIBRARY(${PROJECT_NAME}_shared SHARED ${src})
+ADD_LIBRARY(${PROJECT_NAME}_shared SHARED ${MYSPACE_SOURCES})
 target_compile_definitions(${PROJECT_NAME}_shared PRIVATE MYSPACE_EXPORTS MYSPACE_SHARED)
 
-ADD_LIBRARY(${PROJECT_NAME}_static STATIC ${src})
+ADD_LIBRARY(${PROJECT_NAME}_static STATIC ${MYSPACE_SOURCES})
 
-INSTALL(TARGETS ${PROJECT_NAME}_shared ${PROJECT_NAME}_static
-		RUNTIME	DESTINATION	${PROJECT_SOURCE_DIR}/lib
-		LIBRARY	DESTINATION	${PROJECT_SOURCE_DIR}/lib
-		ARCHIVE	DESTINATION ${PROJECT_SOURCE_DIR}/lib)
- 
+
+INSTALL(TARGETS myspace_shared myspace_static
+		LIBRARY	DESTINATION	lib
+		ARCHIVE	DESTINATION lib)
+
+INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/myspace
+		DESTINATION	"include"
+		FILES_MATCHING
+		PATTERN "*.h"
+		PATTERN "*.hpp")		
