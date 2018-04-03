@@ -16,6 +16,12 @@ public:
 
     }
 
+    Iconv(const string& from, const string& to)
+    :_iconv(iconv_open(to.c_str(), from.c_str()))
+    {
+
+    }
+
     ~Iconv()
     {
         iconv_close(_iconv);
@@ -24,6 +30,8 @@ public:
     string convert(const string& src)
     {
         if(src.empty()) return "";
+
+        const size_t srclen = srcleft;
         
         char* psrc = (char*)src.c_str();
 
@@ -31,19 +39,17 @@ public:
 
         size_t srcleft = sizeof(src.size());
 
-        const size_t srclen = srcleft;
-
         size_t* psrcleft = &srcleft;
 
-        auto dst = new_unique<char[]>(srclen);
+        const size_t dstlen = max(srclen, 8);
+
+        auto dst = new_unique<char[]>(dstlen);
 
 		char* pdst = dst.get();
 
         char** ppdst = &pdst;
 
-        size_t dstleft = srclen;
-
-        const size_t dstlen = dstleft;
+        size_t dstleft = dstlen;
 
         size_t* pdstleft = &dstleft;
 
@@ -150,7 +156,6 @@ public:
         return toMultiChar(936, toWideChar(65001, src));
 #endif
     }
-
 
     static string encodeBase64(const string& src)
     {
