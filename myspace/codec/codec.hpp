@@ -10,7 +10,7 @@ MYSPACE_BEGIN
 class Iconv
 {
 public:
-    Iconv(const char* to, const char* from)
+    Iconv(const char* from, const char* to)
     :_iconv(iconv_open(to, from))
     {
 
@@ -25,38 +25,52 @@ public:
     {
         if(src.empty()) return "";
         
-        char* _inbuf = (char*)src.c_str();
-		char** inbuf = &_inbuf;
-        size_t _inbytesleft = sizeof(src.size());
-        const size_t inbyteslength = _inbytesleft;
-        size_t* inbytesleft = &_inbytesleft;
+        char* psrc = (char*)src.c_str();
 
-        auto dst = new_unique<char[]>(_inbytesleft);
-		char* _oubuf = dst.get();
-        char** oubuf = &_oubuf;
-        size_t _outbytesleft = _inbytesleft;
-        const size_t outbyteslength = _inbytesleft;
-        size_t* outbytesleft = &_outbytesleft;
+		char** ppsrc = &psrc;
+
+        size_t srcleft = sizeof(src.size());
+
+        const size_t srclen = srcleft;
+
+        size_t* psrcleft = &srcleft;
+
+        auto dst = new_unique<char[]>(srclen);
+
+		char* pdst = dst.get();
+
+        char** ppdst = &pdst;
+
+        size_t dstleft = srclen;
+
+        const size_t dstlen = dstleft;
+
+        size_t* pdstleft = &dstleft;
 
         string result;
 
         for(;;)
         {
-            auto n = iconv(_iconv, inbuf, inbytesleft, oubuf, outbytesleft);
+            auto n = iconv(_iconv, ppsrc, psrcleft, ppdst, pdstleft);
 
             if(n < 0)
             {
                 if ( errno == EILSEQ ||  errno == EINVAL)
                 {
-                    *inbuf++;
-                    *inbytesleft--;
+                    *ppsrc++;
+                    
+                    *psrcleft--;
+
                     continue;
                 }
                 else if( errno == E2BIG)
                 {
-                    result.append(dst.get(), outbyteslength - _outbytesleft);
-                    _outbytesleft = outbyteslength;
-                    _oubuf = dst.get();
+                    result.append(dst.get(), dstlen - dstleft);
+
+                    dstleft = dstlen;
+
+                    pdst = dst.get();
+
                     continue;
                 }
                 else
@@ -66,7 +80,8 @@ public:
             }
             else
             {
-                result.append(dst.get(), outbyteslength - _outbytesleft);
+                result.append(dst.get(), dstlen - dstleft);
+
                 break;
             }
         }
@@ -83,6 +98,17 @@ private:
 class Codec
 {
 public:
+
+    static string convertGbkToUtf8(const string& gbk)
+    {
+#ifdef MYSPACE_LINUX
+        return Iconv("GB2312", "UTF-8").convert(gbk);
+#else
+        return "";
+#endif
+    }
+
+
     static string encodeBase64(const string& src)
     {
         string result;
