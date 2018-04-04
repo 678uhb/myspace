@@ -10,9 +10,22 @@
 #include "myspace/path/path.hpp"
 MYSPACE_BEGIN
 
+
+enum LoggerLevel
+{
+	Dev = 0,
+	Debug,
+	Info,
+	Warn,
+	Error,
+};
+
 struct LoggerItem
 {
 	int						_line = 0;
+
+	int						_lv;
+
 	const char*				_file = nullptr;
 
 	string					_content;
@@ -35,6 +48,17 @@ public:
 	{
 		MYSPACE_SYNCHRONIZED
 		{
+			cout << "[";
+			switch(item->_lv)
+			{
+			case LoggerLevel::Dev: cout << "dev"; break;
+			case LoggerLevel::Debug: cout << "debug"; break;
+			case LoggerLevel::Info: cout << "info"; break;
+			case LoggerLevel::Warn: cout << "warn"; break;
+			case LoggerLevel::Error: cout << "error"; break;
+			}
+			cout << "]";
+
 			cout << "[" << Time::format(system_clock::to_time_t(item->_time))
 				<< "][" << Path::basename(item->_file) << ":" << item->_line << "]:"
 				<< item->_content;
@@ -49,14 +73,6 @@ public:
 class Logger
 {
 public:
-	enum Level
-	{
-		Debug = 0,
-		Info = 1,
-		Warn = 2,
-		Error = 3,
-	};
-public:
 	Logger()
 	{
 		_sinks.push_back(new_shared<ConsoleSink>());
@@ -64,23 +80,23 @@ public:
 
 	Logger& setLevel(int lv)
 	{
-		if (lv < 0)
+		if (lv < LoggerLevel::Dev)
 		{
-			_level = Level::Debug;
+			_level = LoggerLevel::Dev;
 		}
-		else if (lv > Level::Error)
+		else if (lv > LoggerLevel::Error)
 		{
-			_level = Level::Error;
+			_level = LoggerLevel::Error;
 		}
 		else
 		{
-			_level = (Level)lv;
+			_level = (LoggerLevel)lv;
 		}
 
 		return *this;
 	}
 
-	Level getLevel()
+	LoggerLevel getLevel()
 	{
 		return _level;
 	}
@@ -88,43 +104,42 @@ public:
 	template<class... Targs>
 	Logger& printDebug(const char* file, int line, Targs&&... args)
 	{
-		if (_level > Level::Debug) return *this;
+		if (_level > LoggerLevel::Debug) return *this;
 
-		return print(file, line, forward<Targs>(args)...);
+		return print(LoggerLevel::Debug, file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
 	Logger& printInfo(const char* file, int line, Targs&&... args)
 	{
-		if (_level > Level::Info) return *this;
+		if (_level > LoggerLevel::Info) return *this;
 
-		return print(file, line, forward<Targs>(args)...);
+		return print(LoggerLevel::Info, file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
 	Logger& printWarn(const char* file, int line, Targs&&... args)
 	{
-		if (_level > Level::Warn) return *this;
+		if (_level > LoggerLevel::Warn) return *this;
 
-		return print(file, line, forward<Targs>(args)...);
+		return print(LoggerLevel::Warn, file, line, forward<Targs>(args)...);
 	}
 
 	template<class... Targs>
 	Logger& printError(const char* file, int line, Targs&&... args)
 	{
-		if (_level > Level::Error) return *this;
+		if (_level > LoggerLevel::Error) return *this;
 
-		return print(file, line, forward<Targs>(args)...);
+		return print(LoggerLevel::Error, file, line, forward<Targs>(args)...);
 	}
 
-private:
-
 	template<class... Targs>
-	Logger& print(const char* file, int line, Targs&&... args)
+	Logger& print(LoggerLevel lv, const char* file, int line, Targs&&... args)
 	{
 		auto item = new_shared<LoggerItem>();
 		item->_file = file;
 		item->_line = line;
+		item->_lv = lv;
 		item->_content = move(StringStream(forward<Targs>(args)...).str());
 
 		for (auto sink : _sinks)
@@ -136,7 +151,7 @@ private:
 
 private:
 
-	Level										_level = Level::Info;
+	LoggerLevel										_level = LoggerLevel::Info;
 
 	deque<shared_ptr<Sink>>						_sinks;
 };
@@ -147,10 +162,11 @@ MYSPACE_API extern Logger logger;
 MYSPACE_END
 
 
-#define MYSPACE_DEBUG(...)  {if(myspace::logger.getLevel() <= myspace::Logger::Debug  ) {myspace::logger.printDebug(__FILE__,__LINE__,##__VA_ARGS__);}}
-#define MYSPACE_INFO(...)	{if(myspace::logger.getLevel() <= myspace::Logger::Info  ){  myspace::logger.printInfo(__FILE__,__LINE__,##__VA_ARGS__);}}
-#define MYSPACE_WARN(...)	{if(myspace::logger.getLevel() <= myspace::Logger::Warn  ){ myspace::logger.printWarn(__FILE__,__LINE__,##__VA_ARGS__) ;}}
-#define MYSPACE_ERROR(...)  {if(myspace::logger.getLevel() <= myspace::Logger::Error  ){  myspace::logger.printError(__FILE__,__LINE__,##__VA_ARGS__);}}
+#define MYSPACE_DEV(...)  {if(myspace::logger.getLevel() <= myspace::LoggerLevel::Dev  ) {myspace::logger.print(LoggerLevel::Dev, __FILE__,__LINE__,##__VA_ARGS__);}}
+#define MYSPACE_DEBUG(...)  {if(myspace::logger.getLevel() <= myspace::LoggerLevel::Debug  ) {myspace::logger.printDebug(__FILE__,__LINE__,##__VA_ARGS__);}}
+#define MYSPACE_INFO(...)	{if(myspace::logger.getLevel() <= myspace::LoggerLevel::Info  ){  myspace::logger.printInfo(__FILE__,__LINE__,##__VA_ARGS__);}}
+#define MYSPACE_WARN(...)	{if(myspace::logger.getLevel() <= myspace::LoggerLevel::Warn  ){ myspace::logger.printWarn(__FILE__,__LINE__,##__VA_ARGS__) ;}}
+#define MYSPACE_ERROR(...)  {if(myspace::logger.getLevel() <= myspace::LoggerLevel::Error  ){  myspace::logger.printError(__FILE__,__LINE__,##__VA_ARGS__);}}
 
 #define MYSPACE_DEBUG_SECONDS(x, ...)  MYSPACE_IF_PAST_SECONDS(x) MYSPACE_DEBUG(__VA_ARGS__);
 #define MYSPACE_INFO_SECONDS(x, ...)	  MYSPACE_IF_PAST_SECONDS(x) MYSPACE_INFO(__VA_ARGS__);
