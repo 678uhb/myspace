@@ -38,43 +38,30 @@ int16_t WaveTool::combine(int16_t pcm1, int16_t pcm2) {
 
 template <class X> X WaveTool::combine(const X &pcm1, const X &pcm2) {
   X result;
-
   auto itr1 = begin(pcm1);
-
   auto itr2 = begin(pcm2);
-
   while (itr1 != end(pcm1) || itr2 != end(pcm2)) {
     auto first = (itr1 == end(pcm1) ? 0 : *itr1);
-
     auto second = (itr2 == end(pcm2) ? 0 : *itr2);
-
     result.push_back(combine(first, second));
-
     ++itr1;
-
     ++itr2;
   }
-
   return move(result);
 }
 
 string WaveTool::combine_16_samplebits(const string &pcm1, const string &pcm2) {
   string result;
-
-  for (size_t i = 0, j = 0; i + 1 < pcm1.size() || j + 1 < pcm2.size();) {
-    int16_t first = (i < pcm1.size() ? *((int16_t *)&pcm1[i]) : 0);
-
-    int16_t second = (j < pcm2.size() ? *((int16_t *)&pcm2[j]) : 0);
-
+  const int16_t *p1 = (const int16_t *)pcm1.c_str();
+  size_t len1 = pcm1.size() / 2;
+  const int16_t *p2 = (const int16_t *)pcm2.c_str();
+  size_t len2 = pcm2.size() / 2;
+  for (size_t i = 0, j = 0; i < len1 || j < len2; ++i, ++j) {
+    int16_t first = (i < len1 ? p1[i] : 0);
+    int16_t second = (j < len2 ? p2[j] : 0);
     int16_t combined = combine(first, second);
-
     result.append((char *)&combined, 2);
-
-    i += 2;
-
-    j += 2;
   }
-
   return move(result);
 }
 
