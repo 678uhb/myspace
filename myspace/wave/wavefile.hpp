@@ -65,9 +65,9 @@ WavFile &WavFile::resetHead() {
 }
 
 WavFile &WavFile::addSize(size_t n) {
-  head_._riff_size += n;
+  head_.riff_size_ += n;
 
-  head_._data_size += n;
+  head_.data_size_ += n;
 
   return *this;
 }

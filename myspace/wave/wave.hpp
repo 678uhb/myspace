@@ -16,34 +16,35 @@ enum AudioFormat {
 //{
 //	WORD        wFormatTag;         /* format type */
 //	WORD        nChannels;          /* number of channels (i.e. mono,
-//stereo...) */ 	DWORD       nSamplesPerSec;     /* sample rate */ 	DWORD
-//nAvgBytesPerSec;    /* for buffer estimation */ 	WORD        nBlockAlign; /*
-//block size of data */ 	WORD        wBitsPerSample;     /* number of bits per
-//sample of mono data */ 	WORD        cbSize;             /* the count in bytes
-//of the size of */
-//									/* extra information
-//(after cbSize) */ } WAVEFORMATEX, *PWAVEFORMATEX, NEAR *NPWAVEFORMATEX, FAR
-//*LPWAVEFORMATEX;
+// stereo...) */ 	DWORD       nSamplesPerSec;     /* sample rate */
+// DWORD nAvgBytesPerSec;    /* for buffer estimation */ 	WORD
+// nBlockAlign; /*
+// block size of data */ 	WORD        wBitsPerSample;     /* number of
+// bits per sample of mono data */ 	WORD        cbSize;             /* the
+// count in bytes of the size of */
+//									/* extra
+// information (after cbSize) */ } WAVEFORMATEX, *PWAVEFORMATEX, NEAR
+//*NPWAVEFORMATEX, FAR *LPWAVEFORMATEX;
 struct WaveFormat {
-  uint16_t _format;
-  uint16_t _channel;
-  uint32_t _sample_rate;
-  uint32_t _bytes_rate;
-  uint16_t _align;
-  uint16_t _sample_bytes;
+  uint16_t format_;
+  uint16_t channel_;
+  uint32_t sample_rate_;
+  uint32_t bytes_rate_;
+  uint16_t align_;
+  uint16_t sample_bytes_;
 };
 
 struct WaveHead {
-  WaveHead(const WaveFormat &fmt) : _format(fmt) {}
-  char _riff[4] = {'R', 'I', 'F', 'F'};
-  uint32_t _riff_size = sizeof(WaveHead) - 8;
-  char _wave[4] = {'W', 'A', 'V', 'E'};
-  char _fmt[4] = {'f', 'm', 't', ' '};
-  uint32_t _fmt_size = 18;
-  WaveFormat _format;
-  uint16_t _ext = 0;
-  char _data[4] = {'d', 'a', 't', 'a'};
-  uint32_t _data_size = 0;
+  WaveHead(const WaveFormat &fmt) : format_(fmt) {}
+  char riff_[4] = {'R', 'I', 'F', 'F'};
+  uint32_t riff_size_ = sizeof(WaveHead) - 8;
+  char wave_[4] = {'W', 'A', 'V', 'E'};
+  char fmt_[4] = {'f', 'm', 't', ' '};
+  uint32_t fmt_size_ = 18;
+  WaveFormat format_;
+  uint16_t ext_ = 0;
+  char data_[4] = {'d', 'a', 't', 'a'};
+  uint32_t data_size_ = 0;
 };
 #pragma pack(pop)
 
