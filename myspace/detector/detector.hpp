@@ -1,320 +1,298 @@
 
 #pragma once
 
-#include "myspace/myspace_include.h"
-#include "myspace/memory/memory.hpp"
 #include "myspace/any/any.hpp"
+#include "myspace/memory/memory.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/socket/socketopt.hpp"
 
 MYSPACE_BEGIN
 
-
-enum DetectType
-{
+enum DetectType {
 #ifdef MYSPACE_LINUX
-	READ = EPOLLIN,
-	WRITE = EPOLLOUT,
-	EXCEP = EPOLLERR,
-	READ_WRITE = READ | WRITE,
+  READ = EPOLLIN,
+  WRITE = EPOLLOUT,
+  EXCEP = EPOLLERR,
+  READ_WRITE = READ | WRITE,
 #else
-	READ = 1,
-	WRITE = (1 << 1),
-	EXCEP = (1 << 2),
-	READ_WRITE = READ | WRITE,
+  READ = 1,
+  WRITE = (1 << 1),
+  EXCEP = (1 << 2),
+  READ_WRITE = READ | WRITE,
 #endif
 };
 
-namespace DetectorImpl
-{
-	struct Candidate
-	{
-		Any _x;
+namespace DetectorImpl {
+struct Candidate {
+  Any _x;
 
-		DetectType _ev;
-	};
+  DetectType _ev;
+};
+} // namespace DetectorImpl
+
+class Select {
+public:
+  template <class X> bool add(X &&x, DetectType dt = READ);
+
+  template <class X> bool mod(X &&x, DetectType ev);
+
+  template <class X> bool aod(X &&x, DetectType ev = READ);
+
+  template <class X> void del(X &&x);
+
+  map<uint32_t, deque<Any>> wait();
+
+  map<uint32_t, deque<Any>> wait(high_resolution_clock::duration duration);
+
+private:
+  map<uint32_t, deque<Any>> wait_tv(timeval *ptv);
+
+  unordered_map<int, DetectorImpl::Candidate> candidates_;
+
+  // fd_set could be very large, according to FD_SETSIZE
+  unique_ptr<fd_set> r_ = new_unique<fd_set>();
+  unique_ptr<fd_set> w_ = new_unique<fd_set>();
+  unique_ptr<fd_set> e_ = new_unique<fd_set>();
+};
+
+#ifdef MYSPACE_LINUX
+class Epoll {
+public:
+  Epoll();
+
+  ~Epoll();
+
+  template <class X> bool add(X &&x, DetectType dt = READ);
+
+  template <class X> bool mod(X &&x, DetectType dt);
+
+  template <class X> bool aod(X &&x, DetectType dt = READ);
+
+  template <class X> void del(X &&x);
+
+  map<uint32_t, deque<Any>> wait();
+
+  map<uint32_t, deque<Any>> wait(high_resolution_clock::duration duration);
+
+private:
+  map<uint32_t, deque<Any>> wait_ms(int ms);
+
+  int epoll_ = -1;
+
+  unordered_map<int, DetectorImpl::Candidate> candidates_;
+};
+inline Epoll::Epoll() : epoll_(epoll_create1(0)) {}
+inline Epoll::~Epoll() {
+  ::close(epoll_);
+  epoll_ = -1;
 }
 
+template <class X> inline bool Epoll::add(X &&x, DetectType dt) {
+  if (!x)
+    return false;
 
-#ifdef MYSPACE_LINUX
-class Epoll
-{
-public:
+  int fd = x->operator int();
 
-	Epoll()
-		:_epoll(epoll_create1(0))
-	{
+  if (candidates_.find(fd) != candidates_.end()) {
+    return false;
+  }
 
-	}
+  epoll_event ev;
+  ev.events = dt;
+  ev.data.fd = fd;
 
-	~Epoll()
-	{
-		::close(_epoll);
+  SocketOpt::setBlock(fd, false);
 
-		_epoll = -1;
-	}
+  if (0 == ::epoll_ctl(epoll_, EPOLL_CTL_ADD, fd, &ev)) {
+    candidates_[fd] = {Any(x), dt};
 
-	template<class X>
-	bool add(X&& x, DetectType dt = READ)
-	{
-		if (!x) return false;
+    return true;
+  }
+  return false;
+}
 
-		int fd = x->operator int();
+template <class X> inline bool Epoll::mod(X &&x, DetectType dt) {
+  if (!x)
+    return false;
 
-		if (_candidates.find(fd) != _candidates.end())
-		{
-			return false;
-		}
+  int fd = x->operator int();
 
-		epoll_event ev;
-		ev.events = dt;
-		ev.data.fd = fd;
+  auto itr = candidates_.find(fd);
 
-		SocketOpt::setBlock(fd, false);
+  if (itr == candidates_.end())
+    return false;
 
-		if (0 == ::epoll_ctl(_epoll, EPOLL_CTL_ADD, fd, &ev))
-		{
-			_candidates[fd] = { Any(x), dt };
+  if (itr->second._ev == dt)
+    return true;
 
-			return true;
-		}
-		return false;
-	}
+  epoll_event ev;
+  ev.events = dt;
+  ev.data.fd = fd;
 
-	template<class X>
-	bool mod(X&& x, DetectType dt)
-	{
-		if (!x) return false;
+  SocketOpt::setBlock(fd, false);
 
-		int fd = x->operator int();
+  if (0 == ::epoll_ctl(epoll_, EPOLL_CTL_MOD, fd, &ev)) {
+    itr->second = {Any(x), dt};
 
-		auto itr = _candidates.find(fd);
+    return true;
+  }
+  return false;
+}
 
-		if (itr == _candidates.end())
-			return false;
+template <class X> inline bool Epoll::aod(X &&x, DetectType dt) {
+  return add(x, dt) || mod(x, dt);
+}
 
-		if (itr->second._ev == dt)
-			return true;
+template <class X> inline void Epoll::del(X &&x) {
+  if (!x)
+    return;
 
-		epoll_event ev;
-		ev.events = dt;
-		ev.data.fd = fd;
+  int fd = x->operator int();
 
-		SocketOpt::setBlock(fd, false);
+  epoll_event ev;
+  ::epoll_ctl(epoll_, EPOLL_CTL_DEL, fd, &ev);
 
-		if (0 == ::epoll_ctl(_epoll, EPOLL_CTL_MOD, fd, &ev))
-		{
-			itr->second = { Any(x), dt };
+  candidates_.erase(fd);
+}
+inline map<uint32_t, deque<Any>> Epoll::wait() { return move(wait_ms(-1)); }
+inline map<uint32_t, deque<Any>>
+Epoll::wait(high_resolution_clock::duration duration) {
+  auto ms = duration_cast<milliseconds>(duration).count();
 
-			return true;
-		}
-		return false;
-	}
+  if (ms < 0) {
+    ms = 0;
+  }
 
-	template<class X>
-	bool aod(X&& x, DetectType dt = READ)
-	{
-		return add(x, dt) || mod(x, dt);
-	}
+  return move(wait_ms(ms));
+}
+inline map<uint32_t, deque<Any>> Epoll::wait_ms(int ms) {
+  map<uint32_t, deque<Any>> result;
 
-	template<class X>
-	void del(X&& x)
-	{
-		if (!x)
-			return;
+  auto events = new_unique<epoll_event[]>(candidates_.size());
 
-		int fd = x->operator int();
+  auto n = ::epoll_wait(epoll_, events.get(), candidates_.size(), ms);
 
-		epoll_event ev;
-		::epoll_ctl(_epoll, EPOLL_CTL_DEL, fd, &ev);
+  for (auto i = 0; i < n; ++i) {
+    auto ev = events[i].events;
 
-		_candidates.erase(fd);
-	}
+    auto fd = events[i].data.fd;
 
-	map<uint32_t, deque<Any>> wait()
-	{
-		return move(wait_ms(-1));
-	}
+    result[ev].push_back(candidates_[fd]._x);
+  }
 
-	map<uint32_t, deque<Any>> wait(high_resolution_clock::duration duration)
-	{
-		auto ms = duration_cast<milliseconds>(duration).count();
-
-		if (ms < 0)
-		{
-			ms = 0;
-		}
-			
-		return move(wait_ms(ms));
-	}
-
-private:
-
-	map<uint32_t, deque<Any>> wait_ms(int ms)
-	{
-		map<uint32_t, deque<Any>> result;
-
-		auto events = new_unique<epoll_event[]>(_candidates.size());
-
-		auto n = ::epoll_wait(_epoll, events.get(), _candidates.size(), ms);
-
-		for (auto i = 0; i < n; ++i)
-		{
-			auto ev = events[i].events;
-
-			auto fd = events[i].data.fd;
-
-			result[ev].push_back(_candidates[fd]._x);
-		}
-
-		return move(result);
-	}
-
-	int	_epoll = -1;
-
-	unordered_map<int, DetectorImpl::Candidate> _candidates;
-};
+  return move(result);
+}
 
 #endif
 
-class Select
-{
-public:
+template <class X> inline bool Select::add(X &&x, DetectType dt) {
+  if (candidates_.size() >= FD_SETSIZE) {
+    return false;
+  }
 
-	template<class X>
-	bool add(X&& x, DetectType dt = READ)
-	{	
-		if (_candidates.size() >= FD_SETSIZE)
-		{
-			return false;
-		}
+  int fd = x->operator int();
 
-		int fd = x->operator int();
+  if (candidates_.find(fd) != candidates_.end()) {
+    return false;
+  }
 
-		if (_candidates.find(fd) != _candidates.end())
-		{
-			return false;
-		}
+  SocketOpt::setBlock(fd, false);
 
-		SocketOpt::setBlock(fd, false);
-			
-		_candidates[fd] = { Any(x), dt };
+  candidates_[fd] = {Any(x), dt};
 
-		return true;
-	}
+  return true;
+}
 
-	template<class X>
-	bool mod(X&& x, DetectType ev)
-	{
-		int fd = x->operator int();
+template <class X> inline bool Select::mod(X &&x, DetectType ev) {
+  int fd = x->operator int();
 
-		auto itr = _candidates.find(fd);
+  auto itr = candidates_.find(fd);
 
-		if (itr == _candidates.end())
-		{
-			return false;
-		}
+  if (itr == candidates_.end()) {
+    return false;
+  }
 
-		SocketOpt::setBlock(fd, false);
-			
-		itr->second = DetectorImpl::Candidate{ Any(x), ev };
+  SocketOpt::setBlock(fd, false);
 
-		return true;
-	}
+  itr->second = DetectorImpl::Candidate{Any(x), ev};
 
-	template<class X>
-	bool aod(X&& x, DetectType ev = READ)
-	{
-		return add(x, ev) || mod(x, ev);
-	}
+  return true;
+}
 
-	template<class X>
-	void del(X&& x)
-	{
-		int fd = x->operator int();
+template <class X> inline bool Select::aod(X &&x, DetectType ev) {
+  return add(x, ev) || mod(x, ev);
+}
 
-		_candidates.erase(fd);
-	}
+template <class X> inline void Select::del(X &&x) {
+  int fd = x->operator int();
 
-	map<uint32_t, deque<Any>> wait()
-	{	
-		return move(wait_tv(nullptr));
-	}
+  candidates_.erase(fd);
+}
+inline map<uint32_t, deque<Any>> Select::wait() {
+  return move(wait_tv(nullptr));
+}
+inline map<uint32_t, deque<Any>>
+Select::wait(high_resolution_clock::duration duration) {
+  if (duration_cast<microseconds>(duration).count() < 0) {
+    duration = microseconds(0);
+  }
 
-	map<uint32_t, deque<Any>> wait(high_resolution_clock::duration duration)
-	{
-		if (duration_cast<microseconds>(duration).count() < 0)
-		{
-			duration = microseconds(0);
-		}	
+  timeval tv{(long)duration_cast<seconds>(duration).count(),
+             (long)duration_cast<microseconds>(duration).count() % 1000000};
 
-		timeval tv
-		{
-			duration_cast<seconds>(duration).count(),
+  return move(wait_tv(&tv));
+}
+inline map<uint32_t, deque<Any>> Select::wait_tv(timeval *ptv) {
+  FD_ZERO(r_.get());
+  FD_ZERO(w_.get());
+  FD_ZERO(e_.get());
 
-			duration_cast<microseconds>(duration).count() % 1000000
-		};
+  int maxfd = 0;
 
-		return move(wait_tv(&tv));
-	}
+  map<uint32_t, deque<Any>> result;
 
-private:
-	map<uint32_t, deque<Any>> wait_tv(timeval* ptv)
-	{
-		FD_ZERO(_r.get());
-		FD_ZERO(_w.get());
-		FD_ZERO(_e.get());
+  for (auto &p : candidates_) {
+    auto &fd = p.first;
 
-		int maxfd = 0;
+    auto &candidate = p.second;
 
-		map<uint32_t, deque<Any>> result;
+    maxfd = max(maxfd, fd);
 
-		for (auto& p : _candidates)
-		{
-			auto& fd = p.first;
+    if (candidate._ev & READ)
+      FD_SET(fd, r_.get());
 
-			auto& candidate = p.second;
+    if (candidate._ev & WRITE)
+      FD_SET(fd, w_.get());
 
-			maxfd = max(maxfd, fd);
+    if (candidate._ev & EXCEP)
+      FD_SET(fd, e_.get());
+  }
 
-			if (candidate._ev & READ) FD_SET(fd, _r.get());
+  auto n = ::select(maxfd + 1, r_.get(), w_.get(), e_.get(), ptv);
 
-			if (candidate._ev & WRITE) FD_SET(fd, _w.get());
+  if (n <= 0)
+    return move(result);
 
-			if (candidate._ev & EXCEP) FD_SET(fd, _e.get());
-		}
+  for (auto &p : candidates_) {
+    if (n <= 0)
+      break;
 
-		auto n = ::select(maxfd + 1, _r.get(), _w.get(), _e.get(), ptv);
+    auto &fd = p.first;
 
-		if (n <= 0)
-			return move(result);
+    auto &candidate = p.second;
 
-		for (auto& p : _candidates)
-		{
-			if (n <= 0)
-				break;
+    if (FD_ISSET(fd, r_.get()))
+      result[READ].push_back(candidate._x), n--;
 
-			auto& fd = p.first;
+    if (FD_ISSET(fd, w_.get()))
+      result[WRITE].push_back(candidate._x), n--;
 
-			auto& candidate = p.second;
+    if (FD_ISSET(fd, e_.get()))
+      result[EXCEP].push_back(candidate._x), n--;
+  }
 
-			if (FD_ISSET(fd, _r.get())) result[READ].push_back(candidate._x), n--;
-
-			if (FD_ISSET(fd, _w.get())) result[WRITE].push_back(candidate._x), n--;
-
-			if (FD_ISSET(fd, _e.get())) result[EXCEP].push_back(candidate._x), n--;
-		}
-
-		return move(result);
-	}
-
-private:
-	unordered_map<int, DetectorImpl::Candidate> _candidates;
-
-	// fd_set could be very large, according to FD_SETSIZE
-	unique_ptr<fd_set> _r = new_unique<fd_set>();
-	unique_ptr<fd_set> _w = new_unique<fd_set>();
-	unique_ptr<fd_set> _e = new_unique<fd_set>();
-};
+  return move(result);
+}
 
 #ifdef MYSPACE_LINUX
 typedef Epoll Detector;

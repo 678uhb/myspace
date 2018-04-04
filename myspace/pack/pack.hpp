@@ -5,8 +5,7 @@
 
 MYSPACE_BEGIN
 
-class Pack
-{
+class Pack {
 public:
 };
 

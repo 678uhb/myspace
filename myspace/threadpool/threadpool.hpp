@@ -1,180 +1,158 @@
 
 #pragma once
 
-#include "myspace/myspace_include.h"
 #include "myspace/critical/critical.hpp"
 #include "myspace/mutex/mutex.hpp"
+#include "myspace/myspace_include.h"
 #include "myspace/scope/scope.hpp"
 
 MYSPACE_BEGIN
 
-class ThreadPool
-{
+class ThreadPool;
+MYSPACE_API extern ThreadPool threadpool;
+
+class ThreadPool {
 public:
+  ThreadPool(size_t maxThreads = thread::hardware_concurrency());
 
-	ThreadPool(size_t maxThreads = thread::hardware_concurrency())
-		:_maxThreads(maxThreads)
-	{
-		if(_maxThreads == 0)
-			_maxThreads = thread::hardware_concurrency();
-	}
+  template <class ft, class... argst>
+  auto pushFront(ft &&f, argst &&... args)
+      -> future<typename result_of<ft(argst...)>::type>;
 
-	template<class ft, class... argst>
-	auto pushFront(ft&& f, argst&&... args)
-		-> future<typename result_of<ft(argst...)>::type>
-	{
-		return move(push(true, forward<ft>(f), forward<argst>(args)...));
-	}
+  template <class ft, class... argst>
+  auto pushBack(ft &&f, argst &&... args)
+      -> future<typename result_of<ft(argst...)>::type>;
 
-
-	template<class ft, class... argst>
-	auto pushBack(ft&& f, argst&&... args)
-		-> future<typename result_of<ft(argst...)>::type>
-	{
-		return move(push(false, forward<ft>(f), forward<argst>(args)...));
-	}
-
-	~ThreadPool()
-	{
-		_stop = true;
-
-		_jobs.notify_all();
-
-		MYSPACE_FOR_LOCK(_threads)
-		{	
-			if(_threads.empty())
-				return;
-
-			_threads.wait_for(__ul, seconds(1), [this]()
-			{
-				return _threads.empty();
-			});
-		}
-	}
+  ~ThreadPool();
 
 private:
+  template <class ft, class... argst>
+  auto push(bool putfront, ft &&f, argst &&... args)
+      -> future<typename result_of<ft(argst...)>::type>;
 
-	template<class ft, class... argst>
-	auto push(bool putfront, ft&& f, argst&&... args)
-		-> future<typename result_of<ft(argst...)>::type>
-	{
-		using return_t = typename result_of<ft(argst...)>::type;
+  void workerProc();
 
-		auto job = make_shared<packaged_task<return_t()>>(bind(forward<ft>(f), forward<argst>(args)...));
+  size_t maxThreads_;
 
-		auto ret = job->get_future();
+  bool stop_ = false;
 
-		MYSPACE_IF_LOCK(_jobs) 
-		{
-			if (putfront)
-			{
-				_jobs.emplace_front([job]() { (*job)(); });
-			}
-			else
-			{
-				_jobs.emplace_back([job]() { (*job)(); });
-			}
+  Critical<list<function<void()>>> jobs_;
 
-			MYSPACE_IF_LOCK(_threads)
-			{
-				if(_threads.size() < _maxThreads)
-				{
-					try
-					{
-						auto t = thread([this](){ this->workerProc(); });
-
-						_threads[t.get_id()] = move(t);
-					}
-					catch(...)
-					{
-						
-					}
-				}
-			}
-		}
-
-		_jobs.notify_one();
-		
-		return move(ret);
-	}
-
-	void workerProc()
-	{
-		MYSPACE_DEFER
-		(
-			MYSPACE_IF_LOCK(_threads)
-			{
-				auto id = this_thread::get_id();
-
-				auto itr = _threads.find(id);
-
-				if(itr != _threads.end())
-				{
-					auto t = move(itr->second);
-
-					_threads.erase(itr);
-
-					_threads.notify_one();
-
-					t.detach();
-				}
-			}
-		);
-
-
-		for (bool wait = true; !_stop ; )
-		{
-			function<void()> job;
-
-			MYSPACE_IF_LOCK(_jobs)
-			{
-				if (_jobs.empty())
-				{
-					if(!wait)
-					{
-						return;
-					}
-
-					wait = false;
-
-					_jobs.wait_for(__ul, seconds(1), [this]() 
-					{
-						return !_jobs.empty() || _stop;
-					});
-
-					continue;
-				}
-				
-				job.swap(_jobs.front());
-
-				_jobs.pop_front();
-			}
-
-			wait = true;
-
-			if (job)
-			{
-				try
-				{
-					job();
-				}
-				catch (...)
-				{
-
-				}
-			}
-		}
-	}
-
-	size_t								_maxThreads;
-
-	bool								_stop = false;
-
-	Critical<list<function<void()>>>	_jobs;
-
-	Critical<unordered_map<thread::id, thread>>				_threads;
+  Critical<unordered_map<thread::id, thread>> threads_;
 };
 
-MYSPACE_API extern ThreadPool threadpool;
+ThreadPool::ThreadPool(size_t maxThreads) : maxThreads_(maxThreads) {
+  if (maxThreads_ == 0)
+    maxThreads_ = thread::hardware_concurrency();
+}
+
+template <class ft, class... argst>
+auto ThreadPool::pushFront(ft &&f, argst &&... args)
+    -> future<typename result_of<ft(argst...)>::type> {
+  return move(push(true, forward<ft>(f), forward<argst>(args)...));
+}
+
+template <class ft, class... argst>
+auto ThreadPool::pushBack(ft &&f, argst &&... args)
+    -> future<typename result_of<ft(argst...)>::type> {
+  return move(push(false, forward<ft>(f), forward<argst>(args)...));
+}
+
+ThreadPool::~ThreadPool() {
+  stop_ = true;
+
+  jobs_.notify_all();
+
+  MYSPACE_FOR_LOCK(threads_) {
+    if (threads_.empty())
+      return;
+
+    threads_.wait_for(__ul, seconds(1), [this]() { return threads_.empty(); });
+  }
+}
+
+template <class ft, class... argst>
+auto ThreadPool::push(bool putfront, ft &&f, argst &&... args)
+    -> future<typename result_of<ft(argst...)>::type> {
+  using return_t = typename result_of<ft(argst...)>::type;
+
+  auto job = make_shared<packaged_task<return_t()>>(
+      bind(forward<ft>(f), forward<argst>(args)...));
+
+  auto ret = job->get_future();
+
+  MYSPACE_IF_LOCK(jobs_) {
+    if (putfront) {
+      jobs_.emplace_front([job]() { (*job)(); });
+    } else {
+      jobs_.emplace_back([job]() { (*job)(); });
+    }
+
+    MYSPACE_IF_LOCK(threads_) {
+      if (threads_.size() < maxThreads_) {
+        try {
+          auto t = thread([this]() { this->workerProc(); });
+
+          threads_[t.get_id()] = move(t);
+        } catch (...) {
+        }
+      }
+    }
+  }
+
+  jobs_.notify_one();
+
+  return move(ret);
+}
+
+void ThreadPool::workerProc() {
+  MYSPACE_DEFER(MYSPACE_IF_LOCK(threads_) {
+    auto id = this_thread::get_id();
+
+    auto itr = threads_.find(id);
+
+    if (itr != threads_.end()) {
+      auto t = move(itr->second);
+
+      threads_.erase(itr);
+
+      threads_.notify_one();
+
+      t.detach();
+    }
+  });
+
+  for (bool wait = true; !stop_;) {
+    function<void()> job;
+
+    MYSPACE_IF_LOCK(jobs_) {
+      if (jobs_.empty()) {
+        if (!wait) {
+          return;
+        }
+
+        wait = false;
+
+        jobs_.wait_for(__ul, seconds(1),
+                       [this]() { return !jobs_.empty() || stop_; });
+
+        continue;
+      }
+
+      job.swap(jobs_.front());
+
+      jobs_.pop_front();
+    }
+
+    wait = true;
+
+    if (job) {
+      try {
+        job();
+      } catch (...) {
+      }
+    }
+  }
+}
 
 MYSPACE_END

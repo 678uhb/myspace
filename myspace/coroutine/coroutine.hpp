@@ -1,310 +1,275 @@
 
 #pragma once
 
-#include "myspace/myspace_include.h"
-#include "myspace/logger/logger.hpp"
 #include "myspace/exception/exception.hpp"
+#include "myspace/logger/logger.hpp"
+#include "myspace/myspace_include.h"
 
 MYSPACE_BEGIN
 
 #ifdef MYSPACE_WINDOWS
 
-class Fiber
-{
+class Fiber {
 public:
-	template<class Function, class... Arguments>
-	Fiber(Function&& func, Arguments&&... args)
-	{
-		_caller = ::ConvertThreadToFiberEx(this, FIBER_FLAG_FLOAT_SWITCH);
+  template <class Function, class... Arguments>
+  Fiber(Function &&func, Arguments &&... args);
 
-		if (!_caller)
-		{
-			_callerIsFiber = true;
+  Fiber(Fiber &&f);
 
-			_caller = GetCurrentFiber();
-		}
+  Fiber(const Fiber &) = delete;
 
-		MYSPACE_IF_THROW(!_caller);
+  Fiber &operator=(const Fiber &) = delete;
 
-		auto f = bind(forward<Function>(func), forward<Arguments>(args)...);
+  void swap(Fiber &&f);
 
-		_func = [f](Fiber& x) { f(x); };
+  ~Fiber();
 
-		_callee = ::CreateFiberEx(1024, 1024, FIBER_FLAG_FLOAT_SWITCH, &Fiber::proc, this);
+  Fiber &resume();
 
-		MYSPACE_IF_THROW(!_callee);
-	}
+  bool callerIsQuit();
 
-	Fiber(Fiber&& f)
-	{
-		swap(move(f));
-	}
-
-	Fiber(const Fiber&) = delete;
-
-	Fiber& operator = (const Fiber&) = delete;
-
-	void swap(Fiber&& f)
-	{
-		if(&f != this)
-		{
-			_func.swap(f._func);
-
-			_calleeIsQuit = f._calleeIsQuit; f._calleeIsQuit = true;
-
-			_callerIsQuit = f._callerIsQuit; f._callerIsQuit = true;
-
-			_caller = f._caller; f._caller = nullptr;
-
-			_callee = f._callee; f._callee = nullptr;
-
-			_callerIsFiber = f._callerIsFiber; f._callerIsFiber = true;
-		}
-	}
-
-	~Fiber()
-	{
-		_callerIsQuit = true;
-
-		if (_callee)
-		{
-			while (!_calleeIsQuit)
-			{
-				resume();
-			}
-
-			::DeleteFiber(_callee);
-		}
-
-		if (!_callerIsFiber)
-		{
-			::ConvertFiberToThread();
-		}
-	}
-
-	Fiber& resume()
-	{
-		auto whoami = ::GetCurrentFiber();
-
-		if (_caller && _caller != whoami)
-		{
-			::SwitchToFiber(_caller);
-		}
-		else if (!_calleeIsQuit && _callee && _callee != whoami)
-		{
-			::SwitchToFiber(_callee);
-		}
-		return *this;
-	}
-
-	bool callerIsQuit()
-	{
-		return _callerIsQuit;
-	}
-
-	bool calleeIsQuit()
-	{
-		return _calleeIsQuit;
-	}
+  bool calleeIsQuit();
 
 private:
+  static void CALLBACK proc(_In_ PVOID lpParameter);
 
-	static void CALLBACK proc(_In_ PVOID lpParameter)
-	{
-		Fiber* f = (Fiber*)lpParameter;
+  function<void(Fiber &)> func_;
 
-		try
-		{
-			if (f->_func)
-			{
-				(f->_func)(*f);
-			}
-		}
-		catch (...)
-		{
-			MYSPACE_ERROR(Exception::dump());
-		}
+  bool callerIsFiber_ = false;
 
-		f->_calleeIsQuit = true;
+  bool callerIsQuit_ = false;
 
-		f->resume();
-	}
+  bool calleeIsQuit_ = false;
 
-	function<void(Fiber&)>	_func;
+  LPVOID caller_ = nullptr;
 
-	bool 	_callerIsFiber = false;
-
-	bool	_callerIsQuit = false;
-
-	bool	_calleeIsQuit = false;
-
-	LPVOID _caller = nullptr;
-
-	LPVOID _callee = nullptr;
+  LPVOID callee_ = nullptr;
 };
-
-//
-//template<class Function, class... Arguments>
-//auto makeFiber(Function&& func, Arguments&&... args)
-//{
-//	auto f = bind(forward<Function>(func), forward<Arguments>(args)...);
-//
-//	using ReturnType = decltype(f(Fiber<void>)());
-//
-//	return Fiber<ReturnType>(forward<Function>(func), forward<Arguments>(args)...);
-//}
 
 #endif
 
 #ifdef MYSPACE_LINUX
 
-class Ucontext
-{
+class Ucontext {
 public:
-	template<class Function, class... Arguments>
-	Ucontext(Function&& func, Arguments&&... args)
-		:_stackBuffer(new char[8196])
-	{
-		MYSPACE_DEV("Ucontext()");
+  template <class Function, class... Arguments>
+  Ucontext(Function &&func, Arguments &&... args);
 
-		MYSPACE_IF_THROW(::getcontext(_callee.get()) < 0);
+  ~Ucontext();
 
-		_callee->uc_stack.ss_sp = _stackBuffer.get();
+  Ucontext(Ucontext &&u);
 
-		_callee->uc_stack.ss_size = 8196;
+  Ucontext(const Ucontext &) = delete;
 
-		_callee->uc_link = _caller.get();
+  Ucontext operator=(const Ucontext &) = delete;
 
-		::makecontext(_callee.get(), reinterpret_cast<void(*)(void)>(&Ucontext::proc), 1, this);
+  void swap(Ucontext &&f);
 
-		auto f = bind(forward<Function>(func), forward<Arguments>(args)...);
+  bool callerIsQuit();
 
-		_func = [f](Ucontext& x) { f(x); };
+  bool calleeIsQuit();
 
-		MYSPACE_DEV("Ucontext()!!");
-	}
-
-	~Ucontext()
-	{
-		//_callee.release();
-
-		//_caller.release();
-
-		//_stackBuffer.release();
-
-		MYSPACE_DEV("~Ucontext()");
-
-		_callerIsQuit = true;
-
-		while (!_calleeIsQuit)
-		{
-			resume();
-		}
-
-		MYSPACE_DEV("~Ucontext()!!");
-
-		//MYSPACE_DEV(" ? ", (void*)_callee.get());
-
-		//MYSPACE_DEV(" ? ", (void*)_caller.get());
-
-		//MYSPACE_DEV(" ? ", (void*)_stackBuffer.get());
-	}
-
-	Ucontext(Ucontext&& u)
-	{
-		MYSPACE_DEV("Ucontext(Ucontext&& u)");
-
-		swap(move(u));
-	}
-
-	Ucontext(const Ucontext&) = delete;
-
-	Ucontext operator = (const Ucontext&) = delete;
-
-	void swap(Ucontext&& f)
-	{
-		if(&f != this)
-		{
-			_func.swap(f._func);
-
-			_calleeIsQuit = f._calleeIsQuit; f._calleeIsQuit = true;
-
-			_callerIsQuit = f._callerIsQuit; f._callerIsQuit = true;
-
-			_caller.swap(f._caller);
-
-			_callee.swap(f._callee);
-
-			_stackBuffer.swap(f._stackBuffer);
-
-			_iAmCaller = f._iAmCaller;
-		}
-	}
-
-
-	bool callerIsQuit()
-	{
-		return _callerIsQuit;
-	}
-
-	bool calleeIsQuit()
-	{
-		return _calleeIsQuit;
-	}
-
-	void resume()
-	{
-		if(_iAmCaller && !_calleeIsQuit)
-		{
-			_iAmCaller = false;
-
-			swapcontext(_caller.get(), _callee.get());
-		}
-		else if(!_iAmCaller)
-		{
-			_iAmCaller = true;
-
-			swapcontext(_callee.get(), _caller.get());
-		}
-	}
+  void resume();
 
 private:
+  static void proc(void *arg);
 
-	static void proc(void* arg)
-	{
-		auto caller = (Ucontext*)arg;
+  bool iAmCaller_ = true;
 
-		try
-		{
-			if(caller && caller->_func)
-			{
-				(caller->_func)(*caller);
-			}
-		}
-		catch(...)
-		{
+  bool callerIsQuit_ = false;
 
-		}
+  bool calleeIsQuit_ = false;
 
-		caller->_calleeIsQuit = true;
+  function<void(Ucontext &)> func_;
 
-		caller->resume();
-	}
+  unique_ptr<ucontext_t> caller_ = unique_ptr<ucontext_t>(new ucontext_t);
 
-	bool	_iAmCaller = true;
+  unique_ptr<ucontext_t> callee_ = unique_ptr<ucontext_t>(new ucontext_t);
 
-	bool	_callerIsQuit = false;
-
-	bool	_calleeIsQuit = false;
-
-	function<void(Ucontext&)> _func;
-
-	unique_ptr<ucontext_t> _caller = unique_ptr<ucontext_t>(new ucontext_t);
-
-	unique_ptr<ucontext_t> _callee = unique_ptr<ucontext_t>(new ucontext_t);
-
-	unique_ptr<char[]>	_stackBuffer;
+  unique_ptr<char[]> stackBuffer_;
 };
+
+#endif
+
+#ifdef MYSPACE_WINDOWS
+
+template <class Function, class... Arguments>
+inline Fiber::Fiber(Function &&func, Arguments &&... args) {
+  caller_ = ::ConvertThreadToFiberEx(this, FIBER_FLAG_FLOAT_SWITCH);
+
+  if (!caller_) {
+    callerIsFiber_ = true;
+
+    caller_ = GetCurrentFiber();
+  }
+
+  MYSPACE_IF_THROW(!caller_);
+
+  auto f = bind(forward<Function>(func), forward<Arguments>(args)...);
+
+  func_ = [f](Fiber &x) { f(x); };
+
+  callee_ =
+      ::CreateFiberEx(1024, 1024, FIBER_FLAG_FLOAT_SWITCH, &Fiber::proc, this);
+
+  MYSPACE_IF_THROW(!callee_);
+}
+
+inline Fiber::Fiber(Fiber &&f) { swap(move(f)); }
+
+inline void Fiber::swap(Fiber &&f) {
+  if (&f != this) {
+    func_.swap(f.func_);
+
+    calleeIsQuit_ = f.calleeIsQuit_;
+    f.calleeIsQuit_ = true;
+
+    callerIsQuit_ = f.callerIsQuit_;
+    f.callerIsQuit_ = true;
+
+    caller_ = f.caller_;
+    f.caller_ = nullptr;
+
+    callee_ = f.callee_;
+    f.callee_ = nullptr;
+
+    callerIsFiber_ = f.callerIsFiber_;
+    f.callerIsFiber_ = true;
+  }
+}
+
+inline Fiber::~Fiber() {
+  callerIsQuit_ = true;
+
+  if (callee_) {
+    while (!calleeIsQuit_) {
+      resume();
+    }
+
+    ::DeleteFiber(callee_);
+  }
+
+  if (!callerIsFiber_) {
+    ::ConvertFiberToThread();
+  }
+}
+
+inline Fiber &Fiber::resume() {
+  auto whoami = ::GetCurrentFiber();
+
+  if (caller_ && caller_ != whoami) {
+    ::SwitchToFiber(caller_);
+  } else if (!calleeIsQuit_ && callee_ && callee_ != whoami) {
+    ::SwitchToFiber(callee_);
+  }
+  return *this;
+}
+inline bool Fiber::callerIsQuit() { return callerIsQuit_; }
+inline bool Fiber::calleeIsQuit() { return calleeIsQuit_; }
+inline void CALLBACK Fiber::proc(_In_ PVOID lpParameter) {
+  Fiber *f = (Fiber *)lpParameter;
+
+  try {
+    if (f->func_) {
+      (f->func_)(*f);
+    }
+  } catch (...) {
+    MYSPACE_ERROR(Exception::dump());
+  }
+
+  f->calleeIsQuit_ = true;
+
+  f->resume();
+}
+
+#endif
+
+#ifdef MYSPACE_LINUX
+
+template <class Function, class... Arguments>
+inline Ucontext::Ucontext(Function &&func, Arguments &&... args)
+    : stackBuffer_(new char[8196]) {
+  MYSPACE_DEV("Ucontext()");
+
+  MYSPACE_IF_THROW(::getcontext(callee_.get()) < 0);
+
+  callee_->uc_stack.ss_sp = stackBuffer_.get();
+
+  callee_->uc_stack.ss_size = 8196;
+
+  callee_->uc_link = caller_.get();
+
+  ::makecontext(callee_.get(),
+                reinterpret_cast<void (*)(void)>(&Ucontext::proc), 1, this);
+
+  auto f = bind(forward<Function>(func), forward<Arguments>(args)...);
+
+  func_ = [f](Ucontext &x) { f(x); };
+
+  MYSPACE_DEV("Ucontext()!!");
+}
+inline Ucontext::~Ucontext() {
+  MYSPACE_DEV("~Ucontext()");
+
+  callerIsQuit_ = true;
+
+  while (!calleeIsQuit_) {
+    resume();
+  }
+
+  MYSPACE_DEV("~Ucontext()!!");
+}
+inline Ucontext::Ucontext(Ucontext &&u) {
+  MYSPACE_DEV("Ucontext(Ucontext&& u)");
+
+  swap(move(u));
+}
+inline void Ucontext::swap(Ucontext &&f) {
+  if (&f != this) {
+    func_.swap(f.func_);
+
+    calleeIsQuit_ = f.calleeIsQuit_;
+    f.calleeIsQuit_ = true;
+
+    callerIsQuit_ = f.callerIsQuit_;
+    f.callerIsQuit_ = true;
+
+    caller_.swap(f.caller_);
+
+    callee_.swap(f.callee_);
+
+    stackBuffer_.swap(f.stackBuffer_);
+
+    iAmCaller_ = f.iAmCaller_;
+  }
+}
+inline bool Ucontext::callerIsQuit() { return callerIsQuit_; }
+inline bool Ucontext::calleeIsQuit() { return calleeIsQuit_; }
+inline void Ucontext::resume() {
+  if (iAmCaller_ && !calleeIsQuit_) {
+    iAmCaller_ = false;
+
+    swapcontext(caller_.get(), callee_.get());
+  } else if (!iAmCaller_) {
+    iAmCaller_ = true;
+
+    swapcontext(callee_.get(), caller_.get());
+  }
+}
+inline void Ucontext::proc(void *arg) {
+  auto caller = (Ucontext *)arg;
+
+  try {
+    if (caller && caller->func_) {
+      (caller->func_)(*caller);
+    }
+  } catch (...) {
+  }
+
+  caller->calleeIsQuit_ = true;
+
+  caller->resume();
+}
 
 #endif
 

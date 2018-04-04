@@ -4,148 +4,125 @@
 
 MYSPACE_BEGIN
 
-class Any
-{
-	template<class X>
-	using StorageType = typename decay<X>::type;
+class Any {
+  template <class X> using StorageType = typename decay<X>::type;
 
 public:
-	
-	constexpr Any() noexcept
-		:_ptr(nullptr)
-	{ 
-	}
+  Any() noexcept;
 
-	Any(const Any& a)
-		:_ptr(a.clone())
-	{
-	}
+  Any(const Any &a);
 
-	Any(Any&& a) noexcept
-		: _ptr(a._ptr)
-	{
-		a._ptr = nullptr;
-	}
+  Any(Any &&a) noexcept;
 
-	template<class X,
-		typename enable_if<!is_same<typename decay<X>::type, Any>::value, int>::type = 0>
-	Any(X&& x) 
-	{
-		auto p = new Derived<StorageType<X>>(forward<X>(x));
+  template <class X,
+            typename enable_if<!is_same<typename decay<X>::type, Any>::value,
+                               int>::type = 0>
+  Any(X &&x);
 
-		_ptr = p;
-	}
+  ~Any();
 
-	Any& operator = (const Any& a)
-	{
-		if (_ptr == a._ptr)
-			return *this;
+  Any &operator=(const Any &a);
 
-		auto old = _ptr;
+  Any &operator=(Any &&a);
 
-		_ptr = a._ptr->clone();
+  template <class X,
+            typename enable_if<!is_same<typename decay<X>::type, Any>::value,
+                               int>::type = 0>
+  Any &operator=(const X &x);
 
-		if (old)
-			delete old;
+  operator bool() const;
 
-		return *this;
-	}
+  bool hasValue() const;
 
-	Any& operator = (Any&& a)
-	{
-		if (_ptr == a._ptr)
-			return *this;
+  template <class X> bool is() const;
 
-		_ptr = a._ptr;
+  template <class X> StorageType<X> &as();
 
-		a._ptr = nullptr;
-
-		return *this;
-	}
-
-	template<class X,
-		typename enable_if<!is_same<typename decay<X>::type, Any>::value, int>::type = 0>
-	Any& operator = (const X& x)
-	{
-		this->operator=(move(Any(x)));
-	}
-
-	~Any()
-	{	
-		delete _ptr;
-	}
-
-	operator bool() const
-	{
-		return hasValue();
-	}
-
-	bool hasValue() const
-	{
-		return !!_ptr;
-	}
-
-	template<class X>
-	bool is() const
-	{
-		typedef StorageType<X> T;
-
-		return !!dynamic_cast<Derived<T>*>(_ptr);
-	}
-
-	template<class X>
-	StorageType<X>& as()
-	{
-		typedef StorageType<X> T;
-
-		auto derived = dynamic_cast<Derived<T>*>(_ptr);
-
-		if (!derived)
-			throw bad_cast();
-
-		return derived->_value;
-	}
-
-	template<class X>
-	operator X ()
-	{
-		return as<StorageType<X>>();
-	}
+  template <class X> operator X();
 
 private:
-	
-	struct Base
-	{
-		virtual ~Base() {}
+  struct Base {
+    virtual ~Base() {}
+    virtual Base *clone() const = 0;
+  };
 
-		virtual Base* clone() const = 0;
-	};
+  template <typename X> struct Derived : Base {
+    template <typename T> Derived(T &&x) : value_(forward<T>(x)) {}
 
-	template<typename X>
-	struct Derived : Base
-	{
-		template<typename T>
-		Derived(T&& x)
-			:_value(forward<T>(x))
-		{ }
+    Base *clone() const { return new Derived<X>(value_); }
 
-		Base* clone() const
-		{
-			return new Derived<X>(_value);
-		}
+    X value_;
+  };
 
-		X	_value;
-	};
+  Base *clone() const {
+    if (ptr_)
+      return ptr_->clone();
+    return nullptr;
+  }
 
-	Base* clone() const
-	{
-		if (_ptr)
-			return _ptr->clone();
-
-		return nullptr;
-	}
-
-	Base* _ptr = nullptr;
+  Base *ptr_ = nullptr;
 };
+
+inline Any::Any() noexcept : ptr_(nullptr) {}
+
+inline Any::Any(const Any &a) : ptr_(a.clone()) {}
+
+inline Any::Any(Any &&a) noexcept : ptr_(a.ptr_) { a.ptr_ = nullptr; }
+
+template <class X,
+          typename enable_if<!is_same<typename decay<X>::type, Any>::value,
+                             int>::type>
+inline Any::Any(X &&x) {
+  auto p = new Derived<Any::StorageType<X>>(forward<X>(x));
+  ptr_ = p;
+}
+
+inline Any &Any::operator=(const Any &a) {
+  if (ptr_ == a.ptr_)
+    return *this;
+  auto old = ptr_;
+  ptr_ = a.ptr_->clone();
+  if (old)
+    delete old;
+  return *this;
+}
+
+inline Any &Any::operator=(Any &&a) {
+  if (ptr_ == a.ptr_)
+    return *this;
+  ptr_ = a.ptr_;
+  a.ptr_ = nullptr;
+  return *this;
+}
+
+template <class X,
+          typename enable_if<!is_same<typename decay<X>::type, Any>::value,
+                             int>::type>
+inline Any &Any::operator=(const X &x) {
+  this->operator=(move(Any(x)));
+}
+
+inline Any::~Any() { delete ptr_; }
+
+inline Any::operator bool() const { return hasValue(); }
+
+inline bool Any::hasValue() const { return !!ptr_; }
+
+template <class X> inline bool Any::is() const {
+  typedef Any::StorageType<X> T;
+  return !!dynamic_cast<Derived<T> *>(ptr_);
+}
+
+template <class X> inline Any::StorageType<X> &Any::as() {
+  typedef Any::StorageType<X> T;
+  auto derived = dynamic_cast<Derived<T> *>(ptr_);
+  if (!derived)
+    throw bad_cast();
+  return derived->value_;
+}
+
+template <class X> inline Any::operator X() {
+  return as<Any::StorageType<X>>();
+}
 
 MYSPACE_END

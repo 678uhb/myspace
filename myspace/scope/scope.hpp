@@ -1,46 +1,38 @@
 
 #pragma once
 
-#include "myspace/myspace_include.h"
 #include "myspace/annoymous/annoymous.hpp"
+#include "myspace/myspace_include.h"
 
 MYSPACE_BEGIN
 
-class Scope 
-{
+class Scope {
 public:
-	
-	template<class f_t, class... a_t>
-	Scope(f_t&& f, a_t&&... args)
-		:_f(bind(forward<f_t&&>(f), forward<a_t&&>(args)...)) 
-	{
-	}
+  template <class f_t, class... a_t> Scope(f_t &&f, a_t &&... args);
 
-	~Scope()
-	{ 
-		if (_f)
-		{
-			try 
-			{
-				_f(); 
-			}
-			catch (...)
-			{
-			};
-		}
-	}
-	
-	void dismiss() 
-	{ 
-		_f = nullptr; 
-	}
+  ~Scope();
 
+  void dismiss();
 
 private:
-	function<void()> _f = nullptr;
+  function<void()> defered_ = nullptr;
 };
 
+template <class f_t, class... a_t>
+inline Scope::Scope(f_t &&f, a_t &&... args)
+    : defered_(bind(forward<f_t &&>(f), forward<a_t &&>(args)...)) {}
 
-#define MYSPACE_DEFER(f) MYSPACE_ANNOYMOUS(Scope)([&](){f;})
+inline Scope::~Scope() {
+  if (defered_) {
+    try {
+      defered_();
+    } catch (...) {
+    };
+  }
+}
+
+inline void Scope::dismiss() { defered_ = nullptr; }
+
+#define MYSPACE_DEFER(f) MYSPACE_ANNOYMOUS(Scope)([&]() { f; })
 
 MYSPACE_END

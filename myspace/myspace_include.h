@@ -2,7 +2,6 @@
 
 #pragma once
 
-
 #if defined(_WIN32)
 #define MYSPACE_WINDOWS
 #elif defined(__linux__)
@@ -17,32 +16,32 @@
 #endif
 
 #ifndef NOMINMAX
-#define  NOMINMAX
+#define NOMINMAX
 #endif
 
 #undef FD_SETSIZE
-#define FD_SETSIZE  1024*1024
+#define FD_SETSIZE 1024 * 1024
 
-#include <Windows.h>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <direct.h>
-#include <corecrt_io.h>
 #include <Objbase.h>
+#include <WS2tcpip.h>
+#include <WinSock2.h>
+#include <Windows.h>
+#include <corecrt_io.h>
+#include <direct.h>
 #pragma comment(lib, "ws2_32.lib")
 
 #elif defined(MYSPACE_LINUX)
 
-#include <unistd.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <iconv.h>
 #include <netinet/in.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <uuid/uuid.h>
-#include <sys/epoll.h>
-#include <iconv.h>
 #include <ucontext.h>
+#include <unistd.h>
+#include <uuid/uuid.h>
 #else
 
 #error "unknown platform"
@@ -50,40 +49,40 @@
 #endif
 
 // c headers
-#include <cerrno>
-#include <cstdint>
-#include <cstdarg>
-#include <cstring>
 #include <cctype>
+#include <cerrno>
 #include <csetjmp>
-//cpp headers
-#include <atomic>
+#include <cstdarg>
+#include <cstdint>
+#include <cstring>
+// cpp headers
 #include <algorithm>
+#include <atomic>
 #include <bitset>
 #include <chrono>
 #include <condition_variable>
+#include <deque>
 #include <exception>
 #include <fstream>
 #include <functional>
 #include <future>
+#include <iomanip>
 #include <ios>
 #include <iostream>
-#include <iomanip>
 #include <list>
-#include <string>
-#include <sstream>
-#include <system_error>
-#include <thread>
-#include <unordered_set>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include <tuple>
-#include <deque>
-#include <typeindex>
 #include <map>
 #include <set>
+#include <sstream>
+#include <string>
+#include <system_error>
+#include <thread>
+#include <tuple>
 #include <type_traits>
+#include <typeindex>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 using namespace std;
 using namespace chrono;
 using namespace this_thread;
@@ -91,11 +90,11 @@ using namespace placeholders;
 
 #if defined(MYSPACE_WINDOWS) && defined(MYSPACE_SHARED)
 
-# ifdef MYSPACE_EXPORTS
-# define MYSPACE_API  __declspec(dllexport)
-# else
-# define MYSPACE_API  __declspec(dllimport)
-# endif
+#ifdef MYSPACE_EXPORTS
+#define MYSPACE_API __declspec(dllexport)
+#else
+#define MYSPACE_API __declspec(dllimport)
+#endif
 
 #else
 
@@ -104,4 +103,4 @@ using namespace placeholders;
 #endif
 
 #define MYSPACE_BEGIN namespace myspace {
-#define MYSPACE_END   }
+#define MYSPACE_END }
