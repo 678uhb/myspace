@@ -10,7 +10,7 @@ public:
   static string gen();
 };
 
-string UUID::gen() {
+inline string UUID::gen() {
 #ifdef MYSPACE_WINDOWS
   GUID guid;
   string uuid;
