@@ -20,6 +20,9 @@ public:
   static deque<string> split(const string &src, char delm);
 
   static deque<string> split(const char *src, char delm);
+
+  template <class Iteraterable>
+  static string join(const Iteraterable &x, const string &joinToken);
 };
 
 class StringStream : public stringstream {
@@ -186,5 +189,20 @@ template <class T> inline StringStream &StringStream::_put(T &&x) {
 }
 
 inline StringStream &StringStream::_put() { return *this; }
+
+template <class Iteraterable>
+inline string Strings::join(const Iteraterable &x, const string &joinToken) {
+  auto itr = begin(x);
+  bool first = true;
+  string result;
+  while (itr != end(x)) {
+    if (!first) {
+      result.append(joinToken);
+    }
+    result.append(*itr);
+    first = false;
+  }
+  return move(result);
+}
 
 MYSPACE_END

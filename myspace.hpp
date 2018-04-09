@@ -1,11 +1,14 @@
 #pragma once
 
+#include "myspace/algorithm/algorithm.hpp"
 #include "myspace/any/any.hpp"
+#include "myspace/code/reuse.hpp"
 #include "myspace/codec/codec.hpp"
 #include "myspace/config/config.hpp"
 #include "myspace/coroutine/coroutine.hpp"
 #include "myspace/detector/detector.hpp"
 #include "myspace/exception/exception.hpp"
+#include "myspace/json/json.hpp"
 #include "myspace/listener/listener.hpp"
 #include "myspace/logger/logger.hpp"
 #include "myspace/pool/pool.hpp"
