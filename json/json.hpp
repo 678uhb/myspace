@@ -543,15 +543,33 @@ private:
 
   string onString() {
     try {
+      bool escape = false;
       skipWhite();
       assert_get('\"');
       string result;
       for (;;) {
         auto c = get(false);
-        if (c == '\"')
+        switch (c) {
+        case '\\':
+          if (!escape) {
+            escape = true;
+          } else {
+            escape = false;
+            result.append(1, c);
+          }
           break;
-        result.append(1, c);
+        case '\"':
+          if (escape) {
+            escape = false;
+            result.append(1, c);
+            break;
+          }
+          goto END_ONSTRING;
+        default:
+          result.append(1, c);
+        }
       }
+    END_ONSTRING:
       return move(result);
     } catch (...) {
       MYSPACE_THROW("decode string failed");
