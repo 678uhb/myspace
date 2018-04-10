@@ -31,7 +31,7 @@ inline string Time::format(time_t t, const string &fmt) {
   if (n > 0)
     ret.assign(buf.get(), n);
 
-  return move(ret);
+  return ret;
 }
 
 template <class Function, class... Arguments>

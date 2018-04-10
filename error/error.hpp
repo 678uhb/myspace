@@ -47,10 +47,10 @@ inline string Error::strerror(int ec) {
   ::FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
                   nullptr, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                   (LPTSTR)&buf, 0, nullptr);
-  return move(string((char *)buf));
+  return string((char *)buf);
 #else
   auto buf = new_unique<char[]>(1024);
-  return move(string(::strerror_r(ec, buf.get(), 1024)));
+  return string(::strerror_r(ec, buf.get(), 1024));
 #endif
 }
 

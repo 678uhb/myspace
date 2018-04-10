@@ -21,9 +21,9 @@ inline string Path::basename(const string &path) {
   auto pos = path.find_last_of("\\/");
 
   if (pos != string::npos)
-    return move(path.substr(pos + 1));
+    return path.substr(pos + 1);
 
-  return move(path);
+  return path;
 }
 
 inline string Path::basenameNoext(const string &path) {
@@ -46,6 +46,6 @@ inline string Path::dirname(const string &path) {
   if (pos == path.npos)
     return path;
 
-  return move(path.substr(0, pos));
+  return path.substr(0, pos);
 }
 MYSPACE_END

@@ -59,7 +59,7 @@ inline void Exception::Throw(const exception &e) {
 inline string Exception::dump() {
   string s;
   _dump(s);
-  return move(s);
+  return s;
 }
 // inline const char *Exception::what() const noexcept { return desc_.c_str(); }
 inline void Exception::_dump(string &s, const exception &e) {

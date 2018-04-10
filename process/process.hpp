@@ -30,15 +30,15 @@ inline string Process::getMyFullName() {
 #endif
   if (n <= 0)
     return "";
-  return move(string(name.get(), n));
+  return string(name.get(), n);
 }
 
 inline string Process::getMyName() {
-  return move(Path::basename(getMyFullName()));
+  return Path::basename(getMyFullName());
 }
 
 inline string Process::getMyNameNoExt() {
-  return move(Path::basenameNoext(getMyFullName()));
+  return Path::basenameNoext(getMyFullName());
 }
 
 inline string Process::cwd(const string &path) {
@@ -54,14 +54,14 @@ inline string Process::cwd(const string &path) {
     if (n <= 0)
       return "";
 
-    return move(string(name.get(), n));
+    return string(name.get(), n);
 #else
     auto n = readlink("/proc/self/cwd", name.get(), maxPath);
 
     if (n <= 0)
       return "";
 
-    return move(string(name.get(), n));
+    return string(name.get(), n);
 #endif
   }
 #if defined(MYSPACE_WINDOWS)

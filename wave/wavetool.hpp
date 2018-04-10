@@ -62,7 +62,7 @@ string WaveTool::combine_16_samplebits(const string &pcm1, const string &pcm2) {
     int16_t combined = combine(first, second);
     result.append((char *)&combined, 2);
   }
-  return move(result);
+  return result;
 }
 
 MYSPACE_END

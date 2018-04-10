@@ -176,7 +176,7 @@ string Socket::recv(high_resolution_clock::duration timeout) {
       break;
     }
   }
-  return move(data);
+  return data;
 }
 
 string Socket::recv(size_t len, high_resolution_clock::duration timeout) {
@@ -211,7 +211,7 @@ string Socket::recv(size_t len, high_resolution_clock::duration timeout) {
       break;
     }
   }
-  return move(string(buf.get(), recvn));
+  return string(buf.get(), recvn);
 }
 
 string Socket::recv(size_t len) {
@@ -241,13 +241,13 @@ string Socket::recv(size_t len) {
       break;
     }
   }
-  return move(string(buf.get(), recvn));
+  return string(buf.get(), recvn);
 }
 
 string Socket::recv_until(const string &delm,
                           high_resolution_clock::duration timeout) {
   if (delm.empty())
-    return move(recv(timeout));
+    return recv(timeout);
 
   size_t recvn = delm.size();
 
@@ -291,7 +291,7 @@ string Socket::recv_until(const string &delm,
     if (!recvn)
       recvn = delm.size();
   }
-  return move(ret);
+  return ret;
 }
 
 Socket &Socket::setBlock() { return setBlock(true); }

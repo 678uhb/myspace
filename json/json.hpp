@@ -291,7 +291,7 @@ public:
   }
 };
 class JsonObject : public Value<Json::Object> {
-  friend class Json;
+  friend class myspace::Json;
 
 public:
   JsonObject(const Json::Object &x) : Value(x) {}
@@ -380,7 +380,7 @@ Json &Json::operator=(Json &&x) {
   return *this;
 }
 
-inline string Json::dump() const { return move(value_->dump()); }
+inline string Json::dump() const { return value_->dump(); }
 
 namespace jsonimpl {
 class JsonParser {
@@ -433,10 +433,10 @@ private:
           get();
           return Json(move(arr));
         case '\"':
-          arr.emplace_back(move(onString()));
+          arr.emplace_back(onString());
           break;
         case '[':
-          arr.emplace_back(move(onArray()));
+          arr.emplace_back(onArray());
           break;
         case 't':
         case 'T':
@@ -446,10 +446,10 @@ private:
           break;
         case 'N':
         case 'n':
-          arr.emplace_back(move(onNull()));
+          arr.emplace_back(onNull());
           break;
         case '{':
-          arr.emplace_back(move(onObject()));
+          arr.emplace_back(onObject());
           break;
         case '+':
         case '-':
@@ -570,7 +570,7 @@ private:
         }
       }
     END_ONSTRING:
-      return move(result);
+      return result;
     } catch (...) {
       MYSPACE_THROW("decode string failed");
     }
@@ -679,16 +679,16 @@ private:
 } // namespace jsonimpl
 
 inline Json Json::parse(const string &src) {
-  return move(jsonimpl::JsonParser(src.c_str()).parse());
+  return jsonimpl::JsonParser(src.c_str()).parse();
 }
 inline Json Json::parse(const string &src, string &) {
-  return move(jsonimpl::JsonParser(src.c_str()).parse());
+  return jsonimpl::JsonParser(src.c_str()).parse();
 }
 inline Json Json::parse(const char *src) {
-  return move(jsonimpl::JsonParser(src).parse());
+  return jsonimpl::JsonParser(src).parse();
 }
 inline Json Json::parse(const char *src, string &) {
-  return move(jsonimpl::JsonParser(src).parse());
+  return jsonimpl::JsonParser(src).parse();
 }
 inline const Json &Json::operator[](const string &key) const {
   return value_->operator[](key);

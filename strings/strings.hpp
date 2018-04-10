@@ -59,7 +59,7 @@ inline string Strings::tolower(const string &src) {
   for (auto &c : src) {
     result.push_back(std::tolower(c));
   }
-  return move(result);
+  return result;
 }
 
 inline string Strings::toupper(const string &src) {
@@ -70,7 +70,7 @@ inline string Strings::toupper(const string &src) {
   for (auto &c : src) {
     result.push_back(std::toupper(c));
   }
-  return move(result);
+  return result;
 }
 
 inline list<string> Strings::lsplit(string &src, const string &tokens) {
@@ -82,13 +82,13 @@ inline list<string> Strings::lsplit(string &src, const string &tokens) {
     if (pos == src.npos)
       break;
 
-    ret.emplace_back(move(src.substr(0, pos)));
+    ret.emplace_back(src.substr(0, pos));
 
     src.erase(0, pos + 1);
 
   } while (true);
 
-  return move(ret);
+  return ret;
 }
 
 inline string Strings::strip(const string &src, const string &token) {
@@ -115,14 +115,14 @@ inline string Strings::strip(const string &src, const string &token) {
       }
       break;
     }
-    return move(src.substr(first, last - first));
+    return src.substr(first, last - first);
   }
 
   auto beginpos = src.find_first_not_of(token);
 
   auto endpos = src.find_last_not_of(token);
 
-  return move(src.substr(beginpos, endpos - beginpos));
+  return src.substr(beginpos, endpos - beginpos);
 }
 
 inline deque<string> Strings::split(const string &src, const string &tokens) {
@@ -134,18 +134,18 @@ inline deque<string> Strings::split(const string &src, const string &tokens) {
        last_pos != string::npos; last_pos = pos,
               pos = src.find_first_of(tokens, last_pos + tokens.size())) {
     ret.emplace_back(
-        move(src.substr((last_pos == 0 ? 0 : last_pos + tokens.size()), pos)));
+        src.substr((last_pos == 0 ? 0 : last_pos + tokens.size()), pos));
   }
 
-  return move(ret);
+  return ret;
 }
 
 inline deque<string> Strings::split(const string &src, char delm) {
-  return move(split(src, string(1, delm)));
+  return split(src, string(1, delm));
 }
 
 inline deque<string> Strings::split(const char *src, char delm) {
-  return move(split(string(src), string(1, delm)));
+  return split(string(src), string(1, delm));
 }
 
 template <class... Targs> inline StringStream::StringStream(Targs &&... args) {

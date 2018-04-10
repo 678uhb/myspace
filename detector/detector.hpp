@@ -229,7 +229,7 @@ template <class X> inline void Select::del(X &&x) {
   candidates_.erase(fd);
 }
 inline map<uint32_t, deque<Any>> Select::wait() {
-  return move(wait_tv(nullptr));
+  return wait_tv(nullptr);
 }
 inline map<uint32_t, deque<Any>>
 Select::wait(high_resolution_clock::duration duration) {
@@ -240,7 +240,7 @@ Select::wait(high_resolution_clock::duration duration) {
   timeval tv{(long)duration_cast<seconds>(duration).count(),
              (long)duration_cast<microseconds>(duration).count() % 1000000};
 
-  return move(wait_tv(&tv));
+  return wait_tv(&tv);
 }
 inline map<uint32_t, deque<Any>> Select::wait_tv(timeval *ptv) {
   FD_ZERO(r_.get());
@@ -271,7 +271,7 @@ inline map<uint32_t, deque<Any>> Select::wait_tv(timeval *ptv) {
   auto n = ::select(maxfd + 1, r_.get(), w_.get(), e_.get(), ptv);
 
   if (n <= 0)
-    return move(result);
+    return result;
 
   for (auto &p : candidates_) {
     if (n <= 0)
@@ -291,7 +291,7 @@ inline map<uint32_t, deque<Any>> Select::wait_tv(timeval *ptv) {
       result[EXCEP].push_back(candidate._x), n--;
   }
 
-  return move(result);
+  return result;
 }
 
 #ifdef MYSPACE_LINUX

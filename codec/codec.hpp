@@ -109,7 +109,7 @@ inline string Codec::encodeBase64(const string &src) {
     while (i++ < 3)
       result.append(1, '=');
   }
-  return move(result);
+  return result;
 }
 
 inline string Codec::decodeBase64(const string &src) {
@@ -123,9 +123,9 @@ inline string Codec::decodeBase64(const string &src) {
     if (c > 'z') {
       break;
     }
-    a4[i] = base64decode_[c];
+    a4[i] = base64decode_[(size_t)c];
     // MYSPACE_DEV("c = %s, a4[i] = %s", (int)c, (int)a4[i]);
-    if (a4[i] == '\xff') {
+    if (a4[i] == (uint8_t)'\xff') {
       break;
     }
     ++i;
@@ -145,7 +145,7 @@ inline string Codec::decodeBase64(const string &src) {
     result.append(1, (a4[0] << 2) | (a4[1] >> 4));
     result.append(1, (a4[1] << 4) | (a4[2] >> 2));
   }
-  return move(result);
+  return result;
 }
 
 inline size_t Codec::EncodedLength(size_t length) {
