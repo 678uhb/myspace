@@ -131,21 +131,21 @@ template <class Iteraterable>
 inline std::string Strings::join(const Iteraterable &x,
                                  const std::string &join_token) {
 
-	bool first = true;
-	std::string result;
-	for (auto itr = begin(x); itr != end(x); itr = next(itr)) {
-		if (!first) {
-			result.append(join_token);
-		}
-		first = false;
-		result.append(*itr);
-	}
-	return std::move(result);
+  bool first = true;
+  std::string result;
+  for (auto itr = begin(x); itr != end(x); itr = next(itr)) {
+    if (!first) {
+      result.append(join_token);
+    }
+    first = false;
+    result.append(*itr);
+  }
+  return std::move(result);
 }
 
 template <class Iteraterable>
 inline std::string Strings::join(const Iteraterable &x, char join_token) {
-  return Strings::join<Iteraterable>(x, string{join_token});
+  return Strings::join<Iteraterable>(x, std::string{join_token});
 }
 
 MYSPACE_END
