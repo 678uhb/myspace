@@ -1,5 +1,5 @@
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 #include "myspace/wave/wave.hpp"
 
 MYSPACE_BEGIN
@@ -12,10 +12,11 @@ public:
 
   template <class X> static X combine(const X &pcm1, const X &pcm2);
 
-  static string combine_16_samplebits(const string &pcm1, const string &pcm2);
+  static std::string combine_16_samplebits(const std::string &pcm1,
+                                           const std::string &pcm2);
 };
 
-uint8_t WaveTool::combine(uint8_t pcm1, uint8_t pcm2) {
+inline uint8_t WaveTool::combine(uint8_t pcm1, uint8_t pcm2) {
   uint16_t combine = pcm1 + pcm2;
 
   if (combine > UINT8_MAX)
@@ -24,7 +25,7 @@ uint8_t WaveTool::combine(uint8_t pcm1, uint8_t pcm2) {
   return (uint8_t)combine;
 }
 
-int16_t WaveTool::combine(int16_t pcm1, int16_t pcm2) {
+inline int16_t WaveTool::combine(int16_t pcm1, int16_t pcm2) {
   int32_t combined = pcm1 + pcm2;
 
   if (combined > INT16_MAX)
@@ -36,7 +37,7 @@ int16_t WaveTool::combine(int16_t pcm1, int16_t pcm2) {
   return (int16_t)combined;
 }
 
-template <class X> X WaveTool::combine(const X &pcm1, const X &pcm2) {
+template <class X> inline X WaveTool::combine(const X &pcm1, const X &pcm2) {
   X result;
   auto itr1 = begin(pcm1);
   auto itr2 = begin(pcm2);
@@ -47,11 +48,12 @@ template <class X> X WaveTool::combine(const X &pcm1, const X &pcm2) {
     ++itr1;
     ++itr2;
   }
-  return move(result);
+  return std::move(result);
 }
 
-string WaveTool::combine_16_samplebits(const string &pcm1, const string &pcm2) {
-  string result;
+inline std::string WaveTool::combine_16_samplebits(const std::string &pcm1,
+                                                   const std::string &pcm2) {
+  std::string result;
   const int16_t *p1 = (const int16_t *)pcm1.c_str();
   size_t len1 = pcm1.size() / 2;
   const int16_t *p2 = (const int16_t *)pcm2.c_str();

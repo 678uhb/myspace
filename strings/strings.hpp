@@ -1,58 +1,39 @@
 
 #pragma once
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 
 MYSPACE_BEGIN
 
-class Strings {
-public:
-  static string tolower(const string &src);
+namespace Strings {
 
-  static string toupper(const string &src);
+inline std::string tolower(const std::string &src);
 
-  static list<string> lsplit(string &src, const string &tokens);
+inline std::string toupper(const std::string &src);
 
-  static string strip(const string &src, const string &token = "");
+inline std::string strip(const std::string &src, const std::string &delme = "");
 
-  static deque<string> split(const string &src, const string &tokens);
+template <class ReturnType, class SourceType, class DelmeType>
+inline ReturnType splitOf(const SourceType &, const DelmeType &);
 
-  static deque<string> split(const string &src, char delm);
+template <class ReturnType, class SourceType, class X>
+inline ReturnType splitOf(const SourceType &, std::initializer_list<X> init);
 
-  static deque<string> split(const char *src, char delm);
+template <class ReturnType = std::deque<std::string>>
+inline ReturnType splitOf(const std::string &src, const std::string &delme);
 
-  template <class Iteraterable>
-  static string join(const Iteraterable &x, const string &joinToken);
-};
+template <class ReturnType = std::deque<std::string>>
+inline ReturnType splitOf(const std::string &src, const char &delme);
 
-class StringStream : public stringstream {
-public:
-  template <class... Targs> StringStream(Targs &&... args);
+template <class Iteraterable>
+inline std::string join(const Iteraterable &x, const std::string &join_token);
 
-  template <class Type> StringStream &operator<<(const Type &x);
+template <class Iteraterable>
+inline std::string join(const Iteraterable &x, const char);
+}; // namespace Strings
 
-  template <class Type> StringStream &operator>>(Type &x);
-
-  template <class Type> operator Type();
-
-  string str();
-
-  template <class... Targs> StringStream &put(Targs &&... args);
-
-private:
-  template <class T, class... Targs>
-  StringStream &_put(T &&x, Targs &&... args);
-
-  template <class T> StringStream &_put(T &&x);
-
-  StringStream &_put();
-
-private:
-  stringstream ss_;
-};
-
-inline string Strings::tolower(const string &src) {
-  string result;
+inline std::string Strings::tolower(const std::string &src) {
+  std::string result;
 
   result.reserve(src.size());
 
@@ -62,8 +43,8 @@ inline string Strings::tolower(const string &src) {
   return result;
 }
 
-inline string Strings::toupper(const string &src) {
-  string result;
+inline std::string Strings::toupper(const std::string &src) {
+  std::string result;
 
   result.reserve(src.size());
 
@@ -73,29 +54,12 @@ inline string Strings::toupper(const string &src) {
   return result;
 }
 
-inline list<string> Strings::lsplit(string &src, const string &tokens) {
-  list<string> ret;
-
-  do {
-    auto pos = src.find_first_of(tokens);
-
-    if (pos == src.npos)
-      break;
-
-    ret.emplace_back(src.substr(0, pos));
-
-    src.erase(0, pos + 1);
-
-  } while (true);
-
-  return ret;
-}
-
-inline string Strings::strip(const string &src, const string &token) {
+inline std::string Strings::strip(const std::string &src,
+                                  const std::string &delme) {
   if (src.empty())
     return src;
 
-  if (token.empty()) {
+  if (delme.empty()) {
     size_t first = 0;
 
     for (auto c : src) {
@@ -118,91 +82,70 @@ inline string Strings::strip(const string &src, const string &token) {
     return src.substr(first, last - first);
   }
 
-  auto beginpos = src.find_first_not_of(token);
+  auto beginpos = src.find_first_not_of(delme);
 
-  auto endpos = src.find_last_not_of(token);
+  auto endpos = src.find_last_not_of(delme);
 
   return src.substr(beginpos, endpos - beginpos);
 }
 
-inline deque<string> Strings::split(const string &src, const string &tokens) {
-  deque<string> ret;
-
-  string tmp = src;
-
-  for (size_t pos = src.find_first_of(tokens), last_pos = 0;
-       last_pos != string::npos; last_pos = pos,
-              pos = src.find_first_of(tokens, last_pos + tokens.size())) {
-    ret.emplace_back(
-        src.substr((last_pos == 0 ? 0 : last_pos + tokens.size()), pos));
+template <class ReturnType, class SourceType, class DelmeType>
+inline ReturnType Strings::splitOf(const SourceType &src,
+                                   const DelmeType &delme) {
+  ReturnType ret;
+  SourceType one;
+  for (auto &s : src) {
+    if (none_of(
+            begin(delme), end(delme),
+            [&s](const typename DelmeType::value_type &d) { return s == d; })) {
+      fill_n(inserter(one, end(one)), 1, s);
+    } else if (!one.empty()) {
+      fill_n(inserter(ret, end(ret)), 1, one);
+      one.clear();
+    }
   }
-
+  if (!one.empty()) {
+    fill_n(inserter(ret, end(ret)), 1, one);
+  }
   return ret;
 }
 
-inline deque<string> Strings::split(const string &src, char delm) {
-  return split(src, string(1, delm));
+template <class ReturnType, class SourceType, class X>
+inline ReturnType Strings::splitOf(const SourceType &src,
+                                   std::initializer_list<X> init) {
+  return splitOf<ReturnType, SourceType, SourceType>(src, SourceType(init));
 }
 
-inline deque<string> Strings::split(const char *src, char delm) {
-  return split(string(src), string(1, delm));
+template <class ReturnType>
+inline ReturnType Strings::splitOf(const std::string &src,
+                                   const std::string &delme) {
+  return splitOf<ReturnType, std::string, std::string>(src, delme);
 }
 
-template <class... Targs> inline StringStream::StringStream(Targs &&... args) {
-  put(forward<Targs>(args)...);
+template <class ReturnType>
+inline ReturnType Strings::splitOf(const std::string &src, const char &delme) {
+  return splitOf<ReturnType, std::string, std::string>(src, std::string{delme});
 }
-
-template <class Type>
-inline StringStream &StringStream::operator<<(const Type &x) {
-  ss_ << x;
-  return *this;
-}
-
-template <class Type> inline StringStream &StringStream::operator>>(Type &x) {
-  ss_ >> x;
-  return *this;
-}
-
-template <class Type> inline StringStream::operator Type() {
-  Type x;
-  ss_ >> x;
-  return x;
-}
-
-inline string StringStream::str() { return ss_.str(); }
-
-template <class... Targs>
-inline StringStream &StringStream::put(Targs &&... args) {
-  _put(forward<Targs>(args)...);
-  return *this;
-}
-
-template <class T, class... Targs>
-inline StringStream &StringStream::_put(T &&x, Targs &&... args) {
-  ss_ << x;
-  return _put(forward<Targs>(args)...);
-}
-
-template <class T> inline StringStream &StringStream::_put(T &&x) {
-  ss_ << x;
-  return *this;
-}
-
-inline StringStream &StringStream::_put() { return *this; }
 
 template <class Iteraterable>
-inline string Strings::join(const Iteraterable &x, const string &joinToken) {
-  auto itr = begin(x);
-  bool first = true;
-  string result;
-  while (itr != end(x)) {
-    if (!first) {
-      result.append(joinToken);
-    }
-    result.append(*itr);
-    first = false;
-  }
-  return move(result);
+inline std::string Strings::join(const Iteraterable &x,
+                                 const std::string &join_token) {
+
+	bool first = true;
+	std::string result;
+	for (auto itr = begin(x); itr != end(x); itr = next(itr)) {
+		if (!first) {
+			result.append(join_token);
+		}
+		first = false;
+		result.append(*itr);
+	}
+	return std::move(result);
+}
+
+template <class Iteraterable>
+inline std::string Strings::join(const Iteraterable &x, char join_token) {
+  return Strings::join<Iteraterable>(x, string{join_token});
 }
 
 MYSPACE_END

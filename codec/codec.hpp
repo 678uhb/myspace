@@ -1,20 +1,28 @@
 
 #pragma once
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 #include "myspace/logger/logger.hpp"
 #include "myspace/memory/memory.hpp"
-#include "myspace/scope/scope.hpp"
+#include "myspace/defer/defer.hpp"
 MYSPACE_BEGIN
 
 class Codec {
 public:
-  static string convertGbkToUtf8(const string &src);
+  static std::string convertGbkToUtf8(const std::string &src);
 
-  static string convertUtf8ToGbk(const string &src);
+  static std::string convertUtf8ToGbk(const std::string &src);
 
-  static string encodeBase64(const string &src);
+  static std::string encodeBase64(const std::string &src);
 
-  static string decodeBase64(const string &src);
+  static std::string decodeBase64(const std::string &src);
+
+  static uint16_t ntoh(uint16_t);
+
+  static uint16_t hton(uint16_t);
+
+  static uint32_t ntoh(uint32_t);
+
+  static uint32_t hton(uint32_t);
 
 private:
   static size_t EncodedLength(size_t length);
@@ -43,17 +51,17 @@ private:
       "\x27\x28\x29\x2A\x2B\x2C\x2D\x2E\x2F\x30\x31\x32\x33"; // 26 a- z (123)
 };
 
-#ifdef MYSPACE_LINUX
+#if defined(MYSPACE_LINUX)
 
 class Iconv {
 public:
   Iconv(const char *from, const char *to);
 
-  Iconv(const string &from, const string &to);
+  Iconv(const std::string &from, const std::string &to);
 
   ~Iconv();
 
-  string convert(const string &src);
+  std::string convert(const std::string &src);
 
 private:
   iconv_t iconv_;
@@ -61,32 +69,32 @@ private:
 
 #endif
 
-#ifdef MYSPACE_WINDOWS
+#if defined(MYSPACE_WINDOWS)
 
-wstring toWideChar(uint32_t codepage, const string &src);
+std::wstring toWideChar(uint32_t codepage, const std::string &src);
 
-string toMultiByte(uint32_t codepage, const wstring &src);
+std::string toMultiByte(uint32_t codepage, const std::wstring &src);
 
 #endif
 
-inline string Codec::convertGbkToUtf8(const string &src) {
-#ifdef MYSPACE_LINUX
+inline std::string Codec::convertGbkToUtf8(const std::string &src) {
+#if defined(MYSPACE_LINUX)
   return Iconv("GB2312", "UTF-8").convert(src);
 #else
   return toMultiByte(65001, toWideChar(936, src));
 #endif
 }
 
-inline string Codec::convertUtf8ToGbk(const string &src) {
-#ifdef MYSPACE_LINUX
+inline std::string Codec::convertUtf8ToGbk(const std::string &src) {
+#if defined(MYSPACE_LINUX)
   return Iconv("UTF-8", "GB2312").convert(src);
 #else
   return toMultiByte(936, toWideChar(65001, src));
 #endif
 }
 
-inline string Codec::encodeBase64(const string &src) {
-  string result;
+inline std::string Codec::encodeBase64(const std::string &src) {
+  std::string result;
   uint8_t a3[3] = {0}, a4[4] = {0};
   size_t i = 0;
   result.reserve(EncodedLength(src.size()));
@@ -112,8 +120,8 @@ inline string Codec::encodeBase64(const string &src) {
   return result;
 }
 
-inline string Codec::decodeBase64(const string &src) {
-  string result;
+inline std::string Codec::decodeBase64(const std::string &src) {
+  std::string result;
   size_t i = 0;
   uint8_t a3[3] = {0}, a4[4] = {0};
   for (auto c : src) {
@@ -165,57 +173,57 @@ inline void Codec::a4_to_a3(uint8_t *a4, uint8_t *a3) {
   a3[2] = ((a4[2] << 6) & 0xc0) | (a4[3] & 0x3f);
 }
 
-#ifdef MYSPACE_WINDOWS
+#if defined(MYSPACE_WINDOWS)
 
-inline wstring toWideChar(uint32_t codepage, const string &src) {
+inline std::wstring toWideChar(uint32_t codepage, const std::string &src) {
   auto dstlen =
       ::MultiByteToWideChar(codepage, 0, src.c_str(), src.size(), nullptr, 0);
   if (dstlen <= 0)
-    return wstring();
+    return std::wstring();
   auto dstbuffer = new_unique<wchar_t[]>(dstlen);
   auto n = ::MultiByteToWideChar(codepage, 0, src.c_str(), src.size(),
                                  dstbuffer.get(), dstlen);
   if (n <= 0)
-    return wstring();
-  return wstring(dstbuffer.get(), min(n, dstlen));
+    return std::wstring();
+  return std::wstring(dstbuffer.get(), std::min(n, dstlen));
 }
 
-inline string toMultiByte(uint32_t codepage, const wstring &src) {
+inline std::string toMultiByte(uint32_t codepage, const std::wstring &src) {
   auto dstlen = ::WideCharToMultiByte(codepage, 0, src.c_str(), src.size(),
                                       nullptr, 0, nullptr, nullptr);
   if (dstlen <= 0)
-    return string();
+    return std::string();
   auto dstbuffer = new_unique<char[]>(dstlen);
   auto n = ::WideCharToMultiByte(codepage, 0, src.c_str(), src.size(),
                                  dstbuffer.get(), dstlen, nullptr, nullptr);
   if (n <= 0)
-    return string();
-  // MYSPACE_DEV(" to multi bytes result %s",string(dstbuffer.get(), min(n,
-  // dstlen)));
-  return string(dstbuffer.get(), min(n, dstlen));
+    return std::string();
+  // MYSPACE_DEV(" to multi bytes result %s",std::string(dstbuffer.get(),
+  // std::min(n, dstlen)));
+  return std::string(dstbuffer.get(), std::min(n, dstlen));
 }
 
 #endif
 
-#ifdef MYSPACE_LINUX
+#if defined(MYSPACE_LINUX)
 
 inline Iconv::Iconv(const char *from, const char *to)
     : iconv_(iconv_open(to, from)) {}
 
-inline Iconv::Iconv(const string &from, const string &to)
+inline Iconv::Iconv(const std::string &from, const std::string &to)
     : iconv_(iconv_open(to.c_str(), from.c_str())) {}
 
 inline Iconv::~Iconv() { iconv_close(iconv_); }
 
-inline string Iconv::convert(const string &src) {
+inline std::string Iconv::convert(const std::string &src) {
   if (src.empty())
     return "";
   char *psrc = (char *)src.c_str();
   size_t srcleft = src.size();
-  const size_t dstlen = max(size_t(128), min(size_t(1024), srcleft));
+  const size_t dstlen = std::max(size_t(128), std::min(size_t(1024), srcleft));
   auto dst = new_unique<char[]>(dstlen);
   // MYSPACE_DEV(" begin srclen = %s, dstlen = %s", srcleft, dstlen);
-  string result;
+  std::string result;
   while (srcleft > 0) {
     char *pdst = dst.get();
     size_t dstleft = dstlen;
@@ -234,9 +242,17 @@ inline string Iconv::convert(const string &src) {
     }
   }
   // MYSPACE_DEV("result = %s, length = %s", result, result.size());
-  return move(result);
+  return result;
 }
 
 #endif
+
+inline uint16_t Codec::ntoh(uint16_t x) { return ntohs(x); }
+
+inline uint16_t Codec::hton(uint16_t x) { return htons(x); }
+
+inline uint32_t Codec::ntoh(uint32_t x) { return ntohl(x); }
+
+inline uint32_t Codec::hton(uint32_t x) { return htonl(x); }
 
 MYSPACE_END

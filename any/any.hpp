@@ -1,22 +1,23 @@
 #pragma once
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 
 MYSPACE_BEGIN
 
 class Any {
-  template <class X> using StorageType = typename decay<X>::type;
+  template <class X> using StorageType = typename std::decay<X>::type;
 
 public:
-  Any() noexcept;
+  Any() ;
 
   Any(const Any &a);
 
-  Any(Any &&a) noexcept;
+  Any(Any &&a) ;
 
   template <class X,
-            typename enable_if<!is_same<typename decay<X>::type, Any>::value,
-                               int>::type = 0>
+            typename std::enable_if<
+                !std::is_same<typename std::decay<X>::type, Any>::value,
+                int>::type = 0>
   Any(X &&x);
 
   ~Any();
@@ -26,8 +27,9 @@ public:
   Any &operator=(Any &&a);
 
   template <class X,
-            typename enable_if<!is_same<typename decay<X>::type, Any>::value,
-                               int>::type = 0>
+            typename std::enable_if<
+                !std::is_same<typename std::decay<X>::type, Any>::value,
+                int>::type = 0>
   Any &operator=(const X &x);
 
   operator bool() const;
@@ -47,7 +49,7 @@ private:
   };
 
   template <typename X> struct Derived : Base {
-    template <typename T> Derived(T &&x) : value_(forward<T>(x)) {}
+    template <typename T> Derived(T &&x) : value_(std::forward<T>(x)) {}
 
     Base *clone() const { return new Derived<X>(value_); }
 
@@ -63,17 +65,17 @@ private:
   Base *ptr_ = nullptr;
 };
 
-inline Any::Any() noexcept : ptr_(nullptr) {}
+inline Any::Any()  : ptr_(nullptr) {}
 
 inline Any::Any(const Any &a) : ptr_(a.clone()) {}
 
-inline Any::Any(Any &&a) noexcept : ptr_(a.ptr_) { a.ptr_ = nullptr; }
+inline Any::Any(Any &&a)  : ptr_(a.ptr_) { a.ptr_ = nullptr; }
 
-template <class X,
-          typename enable_if<!is_same<typename decay<X>::type, Any>::value,
-                             int>::type>
+template <class X, typename std::enable_if<
+                       !std::is_same<typename std::decay<X>::type, Any>::value,
+                       int>::type>
 inline Any::Any(X &&x) {
-  auto p = new Derived<Any::StorageType<X>>(forward<X>(x));
+  auto p = new Derived<Any::StorageType<X>>(std::forward<X>(x));
   ptr_ = p;
 }
 
@@ -95,11 +97,11 @@ inline Any &Any::operator=(Any &&a) {
   return *this;
 }
 
-template <class X,
-          typename enable_if<!is_same<typename decay<X>::type, Any>::value,
-                             int>::type>
+template <class X, typename std::enable_if<
+                       !std::is_same<typename std::decay<X>::type, Any>::value,
+                       int>::type>
 inline Any &Any::operator=(const X &x) {
-  this->operator=(move(Any(x)));
+  this->operator=(std::move(Any(x)));
 }
 
 inline Any::~Any() { delete ptr_; }
@@ -117,7 +119,7 @@ template <class X> inline Any::StorageType<X> &Any::as() {
   typedef Any::StorageType<X> T;
   auto derived = dynamic_cast<Derived<T> *>(ptr_);
   if (!derived)
-    throw bad_cast();
+    throw std::bad_cast();
   return derived->value_;
 }
 

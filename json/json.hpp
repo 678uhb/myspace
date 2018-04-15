@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "myspace/_/include.hpp"
-#include "myspace/code/reuse.hpp"
+#include "myspace/_/stdafx.hpp"
 
 MYSPACE_BEGIN
 
@@ -13,17 +12,19 @@ class JsonValue;
 
 class Json {
 public:
-  enum Type { STR, OBJ, NUM, NUL, ARR, BOL };
-
-  typedef map<string, Json> Object;
-  typedef deque<Json> Array;
+  MYSPACE_EXCEPTION_DEFINE(Exception, myspace::Exception)
+  MYSPACE_EXCEPTION_DEFINE(ParseError, Json::Exception)
+  MYSPACE_EXCEPTION_DEFINE(RangeError, Json::Exception)
+  MYSPACE_EXCEPTION_DEFINE(TypeError, Json::Exception)
 
 public:
-  static Json parse(const string &src);
-  static Json parse(const string &src, string &err);
-  static Json parse(const char *src);
-  static Json parse(const char *src, string &err);
+  enum Type { STR, OBJ, NUM, NUL, ARR, BOL };
 
+  typedef std::map<std::string, Json> Object;
+  typedef std::deque<Json> Array;
+
+public:
+  static Json parse(const std::string &src) throw(Json::ParseError);
   // Implicit constructor: map-like objects (std::map, std::unordered_map,
   // etc)
   template <
@@ -34,7 +35,8 @@ public:
               std::is_constructible<
                   Json, decltype(std::declval<M>().begin()->second)>::value,
           int>::type = 0>
-  Json(const M &m) : Json(Object(m.begin(), m.end())) {}
+  Json(const M &m)  : Json(Object(m.begin(), m.end())) {}
+  Json(std::initializer_list<std::pair<std::string, Json>> init) ;
 
   // Implicit constructor: vector-like objects (std::list, std::vector,
   // std::set, etc)
@@ -42,78 +44,71 @@ public:
                          std::is_constructible<
                              Json, decltype(*std::declval<V>().begin())>::value,
                          int>::type = 0>
-  Json(const V &v) : Json(Array(v.begin(), v.end())) {}
-  Json(initializer_list<pair<string, Json>> init);
-  Json();
-  Json(const Array &);
-  Json(Array &&);
-  Json(const Object &);
-  Json(Object &&);
-  Json(bool);
-  Json(double);
-  Json(float);
-  Json(int16_t);
-  Json(uint16_t);
-  Json(int32_t);
-  Json(uint32_t);
-  Json(int64_t);
-  Json(uint64_t);
-  Json(const string &);
-  Json(string &&);
-  Json(const char *);
-  Json(Json &&);
-  Json(const Json &);
-  void swap(Json &);
-  void copy(const Json &);
-  void share(Json &);
-  Json &operator=(const Json &);
-  Json &operator=(Json &&);
+  Json(const V &v)  : Json(Array(v.begin(), v.end())) {}
+  Json() ;
+  Json(const Array &) ;
+  Json(Array &&) ;
+  Json(const Object &) ;
+  Json(Object &&) ;
+  Json(bool) ;
+  Json(double) ;
+  Json(float) ;
+  Json(int16_t) ;
+  Json(uint16_t) ;
+  Json(int32_t) ;
+  Json(uint32_t) ;
+  Json(int64_t) ;
+  Json(uint64_t) ;
+  Json(const std::string &) ;
+  Json(std::string &&) ;
+  Json(const char *) ;
+  Json(Json &&) ;
+  Json(const Json &) ;
+  void swap(Json &) ;
+  void copy(const Json &) ;
+  void share(Json &) ;
+  Json &operator=(const Json &) ;
+  Json &operator=(Json &&) ;
 
-  string dump() const;
+  std::string dump() const ;
 
+  // map like access
+  Json &operator[](const std::string &) ;
+  // array like access
+  Json &operator[](size_t) throw(Json::RangeError, Json::TypeError);
   // access
-  const Json &operator[](const string &) const;
-  const Json &operator[](size_t) const;
-  const string &stringValue() const;
-  const Array &arrayValue() const;
-  const Object &objectValue() const;
-  double numberValue() const;
-  bool boolValue() const;
+  std::string &stringValue() throw(Json::TypeError);
+  Array &arrayValue() throw(Json::TypeError);
+  Object &objectValue() throw(Json::TypeError);
+  double &numberValue() throw(Json::TypeError);
+  bool &boolValue() throw(Json::TypeError);
+  // check type
+  Json::Type type() const ;
+  bool isString() const ;
+  bool isArray() const ;
+  bool isObject() const ;
+  bool isNull() const ;
+  bool isNumber() const ;
+  bool isBool() const ;
 
-  Json::Type type() const;
-  bool isString() const;
-  bool isArray() const;
-  bool isObject() const;
-  bool isNull() const;
-  bool isNumber() const;
-  bool isBool() const;
-
-  bool operator==(const Json &) const;
-  bool operator!=(const Json &) const;
-  bool operator<(const Json &) const;
-  bool operator<=(const Json &) const;
-  bool operator>(const Json &) const;
-  bool operator>=(const Json &) const;
+  bool operator==(const Json &) const ;
+  bool operator!=(const Json &) const ;
+  bool operator<(const Json &) const ;
+  bool operator<=(const Json &) const ;
+  bool operator>(const Json &) const ;
+  bool operator>=(const Json &) const ;
 
 private:
-  shared_ptr<jsonimpl::JsonValue> value_;
+  std::shared_ptr<jsonimpl::JsonValue> value_;
 };
 
 namespace jsonimpl {
+
 class JsonValue {
-  // friend class Json;
 public:
-  virtual string dump() const = 0;
-  virtual shared_ptr<JsonValue> clone() const = 0;
+  virtual std::string dump() const = 0;
+  virtual std::shared_ptr<JsonValue> clone() const = 0;
   virtual ~JsonValue() {}
-  virtual const Json &operator[](const string &) const {
-    static Json j;
-    return j;
-  }
-  virtual const Json &operator[](size_t) const {
-    static Json j;
-    return j;
-  }
 
   virtual Json::Type type() const = 0;
   virtual bool isString() const { return false; }
@@ -130,25 +125,39 @@ public:
   virtual bool operator>(const JsonValue *) const = 0;
   virtual bool operator>=(const JsonValue *) const = 0;
 
-  virtual const string &stringValue() const {
-    static string str;
-    return str;
+  virtual Json &operator[](const std::string &) {
+    MYSPACE_THROW_EX(Json::TypeError);
+    throw; /*slient complier*/
   }
-  virtual const Json::Array &arrayValue() const {
-    static Json::Array arr;
-    return arr;
+  virtual Json &operator[](size_t) {
+    MYSPACE_THROW_EX(Json::TypeError);
+    throw; /*slient complier*/
   }
-  virtual const Json::Object &objectValue() const {
-    static Json::Object obj;
-    return obj;
+  virtual std::string &stringValue() {
+    MYSPACE_THROW_EX(Json::TypeError);
+    throw; /*slient complier*/
   }
-  virtual double numberValue() const { return 0; }
-  virtual bool boolValue() const { return false; }
+  virtual Json::Array &arrayValue() {
+    MYSPACE_THROW_EX(Json::TypeError);
+    throw; /*slient complier*/
+  }
+  virtual Json::Object &objectValue() {
+    MYSPACE_THROW_EX(Json::TypeError);
+    throw; /*slient complier*/
+  }
+  virtual double &numberValue() {
+    MYSPACE_THROW_EX(Json::TypeError);
+    throw; /*slient complier*/
+  }
+  virtual bool &boolValue() {
+    MYSPACE_THROW_EX(Json::TypeError);
+    throw; /*slient complier*/
+  }
 };
 template <class X> class Value : public JsonValue {
 protected:
   Value(const X &x) : value_(x) {}
-  Value(X &&x) : value_(move(x)) {}
+  Value(X &&x) : value_(std::move(x)) {}
   bool operator==(const JsonValue *x) const override {
     if (auto d = dynamic_cast<const Value<X> *>(x))
       return value_ == d->value_;
@@ -183,50 +192,42 @@ protected:
 };
 class JsonNull : public JsonValue {
 public:
-  string dump() const override { return "null"; }
-  shared_ptr<JsonValue> clone() const override {
-    return make_shared<JsonNull>();
+  std::string dump() const override { return "null"; }
+  std::shared_ptr<JsonValue> clone() const override {
+    return new_shared<JsonNull>();
   }
   Json::Type type() const override { return Json::NUL; }
   bool isNull() const override { return true; }
-  bool operator==(const JsonValue *x) const override {
-    if (dynamic_cast<const JsonNull *>(x))
-      return true;
-    return false;
+  bool operator==(const JsonValue *x) const  override {
+    return x->type() == type();
   }
   bool operator!=(const JsonValue *x) const override {
-    if (dynamic_cast<const JsonNull *>(x))
-      return false;
-    return true;
+    return x->type() != type();
   }
   bool operator<(const JsonValue *) const override { return false; }
   bool operator<=(const JsonValue *x) const override {
-    if (dynamic_cast<const JsonNull *>(x))
-      return true;
-    return false;
+    return x->type() == type();
   }
   bool operator>(const JsonValue *) const override { return false; }
   bool operator>=(const JsonValue *x) const override {
-    if (dynamic_cast<const JsonNull *>(x))
-      return true;
-    return false;
+    return x->type() == type();
   }
 };
-class JsonString : public Value<string> {
+class JsonString : public Value<std::string> {
 public:
-  JsonString(const string &x) : Value(x) {}
-  JsonString(string &&x) : Value(move(x)) {}
+  JsonString(const std::string &x) : Value(x) {}
+  JsonString(std::string &&x) : Value(std::move(x)) {}
   JsonString(const char *x) : Value(x) {}
-  const string &stringValue() const override { return value_; }
+  std::string &stringValue() override { return value_; }
   Json::Type type() const override { return Json::STR; }
   bool isString() const override { return true; }
-  string dump() const override {
-    stringstream ss;
+  std::string dump() const override {
+    std::stringstream ss;
     ss << '\"' << value_ << '\"';
     return ss.str();
   }
-  shared_ptr<JsonValue> clone() const override {
-    return make_shared<JsonString>(value_);
+  std::shared_ptr<JsonValue> clone() const override {
+    return new_shared<JsonString>(value_);
   }
 };
 class JsonNumber : public Value<double> {
@@ -234,14 +235,14 @@ public:
   JsonNumber(double x) : Value(x) {}
   Json::Type type() const override { return Json::NUM; }
   bool isNumber() const override { return true; }
-  double numberValue() const override { return value_; }
-  string dump() const override {
-    stringstream ss;
+  double &numberValue() override { return value_; }
+  std::string dump() const override {
+    std::stringstream ss;
     ss << value_;
     return ss.str();
   }
-  shared_ptr<JsonValue> clone() const override {
-    return make_shared<JsonNumber>(value_);
+  std::shared_ptr<JsonValue> clone() const override {
+    return new_shared<JsonNumber>(value_);
   }
 };
 class JsonBool : public Value<bool> {
@@ -249,31 +250,32 @@ public:
   JsonBool(bool x) : Value(x) {}
   Json::Type type() const override { return Json::BOL; }
   bool isBool() const override { return true; }
-  bool boolValue() const override { return value_; }
-  string dump() const override {
-    stringstream ss;
-    ss << boolalpha;
+  bool &boolValue() override { return value_; }
+  std::string dump() const override {
+    std::stringstream ss;
+    ss << std::boolalpha;
     ss << value_;
     return ss.str();
   }
-  shared_ptr<JsonValue> clone() const override {
-    return make_shared<JsonBool>(value_);
+  std::shared_ptr<JsonValue> clone() const override {
+    return new_shared<JsonBool>(value_);
   }
 };
 class JsonArray : public Value<Json::Array> {
 public:
   JsonArray(const Json::Array &x) : Value(x) {}
-  JsonArray(Json::Array &&x) : Value(move(x)) {}
+  JsonArray(Json::Array &&x) : Value(std::move(x)) {}
   Json::Type type() const override { return Json::ARR; }
   bool isArray() const override { return true; }
-  const Json::Array &arrayValue() const override { return value_; };
-  const Json &operator[](size_t idx) const override {
+  Json::Array &arrayValue() override { return value_; };
+  Json &operator[](size_t idx) throw(Json::RangeError) override {
     if (idx < value_.size())
       return value_[idx];
-    return JsonValue::operator[](idx);
+    MYSPACE_THROW_EX(Json::RangeError);
+    throw; /*slient complier*/
   }
-  string dump() const override {
-    stringstream ss;
+  std::string dump() const override {
+    std::stringstream ss;
     ss << '[';
     bool first = true;
     for (auto &x : value_) {
@@ -286,27 +288,20 @@ public:
     ss << ']';
     return ss.str();
   }
-  shared_ptr<JsonValue> clone() const override {
-    return make_shared<JsonArray>(value_);
+  std::shared_ptr<JsonValue> clone() const override {
+    return new_shared<JsonArray>(value_);
   }
 };
 class JsonObject : public Value<Json::Object> {
-  friend class myspace::Json;
-
 public:
   JsonObject(const Json::Object &x) : Value(x) {}
-  JsonObject(Json::Object &&x) : Value(move(x)) {}
+  JsonObject(Json::Object &&x) : Value(std::move(x)) {}
   Json::Type type() const override { return Json::OBJ; }
   bool isObject() const override { return true; }
-  const Json::Object &objectValue() const override { return value_; };
-  const Json &operator[](const string &key) const override {
-    auto itr = value_.find(key);
-    if (itr != value_.end())
-      return itr->second;
-    return JsonValue::operator[](key);
-  }
-  string dump() const override {
-    stringstream ss;
+  Json::Object &objectValue() override { return value_; };
+  Json &operator[](const std::string &key) override { return value_[key]; }
+  std::string dump() const override {
+    std::stringstream ss;
     ss << '{';
     bool first = true;
     for (auto &x : value_) {
@@ -318,272 +313,154 @@ public:
     ss << '}';
     return ss.str();
   }
-  shared_ptr<JsonValue> clone() const override {
-    return make_shared<JsonObject>(value_);
+  std::shared_ptr<JsonValue> clone() const override {
+    return new_shared<JsonObject>(value_);
   }
+
+  friend class myspace::Json;
 };
 
-} // namespace jsonimpl
-
-inline Json::Json(initializer_list<pair<string, Json>> init)
-    : Json(Json::Object(init.begin(), init.end())) {}
-inline Json::Json() : value_(make_shared<jsonimpl::JsonNull>()) {}
-inline Json::Json(Json &&x) { swap(x); }
-inline Json::Json(const Json::Object &x)
-    : value_(make_shared<jsonimpl::JsonObject>(x)) {}
-inline Json::Json(Json::Object &&x)
-    : value_(make_shared<jsonimpl::JsonObject>(move(x))) {}
-inline Json::Json(const Json::Array &x)
-    : value_(make_shared<jsonimpl::JsonArray>(x)) {}
-inline Json::Json(Json::Array &&x)
-    : value_(make_shared<jsonimpl::JsonArray>(move(x))) {}
-
-inline Json::Json(bool x) : value_(make_shared<jsonimpl::JsonBool>(x)) {}
-inline Json::Json(const string &x)
-    : value_(make_shared<jsonimpl::JsonString>(x)) {}
-inline Json::Json(string &&x)
-    : value_(make_shared<jsonimpl::JsonString>(move(x))) {}
-inline Json::Json(const char *x)
-    : value_(make_shared<jsonimpl::JsonString>(x)){};
-inline Json::Json(double x) : value_(make_shared<jsonimpl::JsonNumber>(x)) {}
-inline Json::Json(float x) : Json((double)x) {}
-inline Json::Json(int32_t x) : Json((double)x) {}
-inline Json::Json(uint32_t x) : Json((double)x) {}
-inline Json::Json(int16_t x) : Json((double)x) {}
-inline Json::Json(uint16_t x) : Json((double)x) {}
-inline Json::Json(int64_t x) : Json((double)x) {}
-inline Json::Json(uint64_t x) : Json((double)x) {}
-inline Json::Json(const Json &x) { copy(x); }
-inline void Json::swap(Json &j) {
-  if (value_ != j.value_) {
-    value_.swap(j.value_);
-  }
-}
-inline void Json::copy(const Json &x) {
-  if (value_ != x.value_) {
-    if (!x.value_)
-      value_.reset();
-    else
-      value_ = x.value_->clone();
-  }
-}
-inline void Json::share(Json &x) {
-  if (value_ != x.value_)
-    value_ = x.value_;
-}
-Json &Json::operator=(const Json &x) {
-  copy(x);
-  return *this;
-}
-Json &Json::operator=(Json &&x) {
-  swap(x);
-  return *this;
-}
-
-inline string Json::dump() const { return value_->dump(); }
-
-namespace jsonimpl {
 class JsonParser {
 public:
-  JsonParser(const char *src) : src_(src){};
-  Json parse() {
-    skipWhite();
+  MYSPACE_EXCEPTION_DEFINE(Exception, myspace::Exception)
+public:
+  JsonParser(const std::string &src)  : src_(src){};
+  Json parse() throw(JsonParser::Exception) {
     try {
-      auto c = peek();
-      switch (c) {
-      case '+':
-      case '-':
-      case '.':
-      MYSPACE_CASE_0_9:
-        return onNumber();
-        break;
-      case 'n':
-      case 'N':
-        return onNull();
-      case '\"':
-        return onString();
-      case 't':
-      case 'T':
-      case 'F':
-      case 'f':
-        return onBool();
-      case '[':
-        return onArray();
-      case '{':
-        return onObject();
-      }
+      return onValue(peek());
     } catch (...) {
-      MYSPACE_DEV(Exception::dump());
+      MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
-    return Json();
+    return Json{};
   }
 
 private:
-  Json onArray() {
+  Json onValue(char c) throw(JsonParser::Exception) {
+    switch (c) {
+    case 't':
+    case 'T':
+    case 'f':
+    case 'F':
+      return onBool();
+    case 'n':
+    case 'N':
+      return onNull();
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case '+':
+    case '-':
+    case '.':
+      return onNumber();
+    case '\"':
+      return onString();
+    case '[':
+      return onArray();
+    case '{':
+      return onObject();
+    default:
+      MYSPACE_THROW_EX(JsonParser::Exception, "unknown value start with  ", c);
+    }
+    return Json{}; // not reached
+  }
+
+  Json onArray() throw(JsonParser::Exception) {
     try {
       assert_get('[');
       Json::Array arr;
       for (;;) {
         auto c = peek();
-        switch (c) {
-        case ',':
+        if (c == ',') {
           get();
-          break;
-        case ']':
+        } else if (c == ']') {
           get();
-          return Json(move(arr));
-        case '\"':
-          arr.emplace_back(onString());
-          break;
-        case '[':
-          arr.emplace_back(onArray());
-          break;
-        case 't':
-        case 'T':
-        case 'f':
-        case 'F':
-          arr.emplace_back(move(onBool()));
-          break;
-        case 'N':
-        case 'n':
-          arr.emplace_back(onNull());
-          break;
-        case '{':
-          arr.emplace_back(onObject());
-          break;
-        case '+':
-        case '-':
-        case '.':
-        MYSPACE_CASE_0_9:
-          arr.emplace_back(move(onNumber()));
-          break;
-        default:
-          MYSPACE_THROW(" unknown char ", c);
+          return Json(std::move(arr));
+        } else {
+          arr.emplace_back(onValue(c));
         }
       }
     } catch (...) {
-      MYSPACE_THROW("decode array failed");
+      MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
-    return Json();
+    return Json{};
   }
-  Json onObject() {
+  Json onObject() throw(JsonParser::Exception) {
     try {
       skipWhite();
       assert_get('{');
       Json::Object obj;
-      string name;
+      std::string name;
       bool nameready = false;
       for (;;) {
         auto c = peek();
-        MYSPACE_DEV("c = \'%s\', name ready = %s", c, nameready);
         if (c == '}') {
           get();
-          return Json(move(obj));
+          return Json{obj};
         } else if (!nameready) {
-          // MYSPACE_DEV("??");
           assert_peek('\"');
-          // MYSPACE_DEV("!!");
           name = onString();
           assert_get(':');
           nameready = true;
         } else {
           c = peek();
-          switch (c) {
-          case ',':
+          if (',' == c) {
             get();
             nameready = false;
-            break;
-          case '\"': {
-            Json j(onString());
-            obj[name].swap(j);
-            break;
-          }
-          case '[': {
-            Json j(onArray());
-            obj[name].swap(j);
-            break;
-          }
-          case '{': {
-            Json j(onObject());
-            obj[name].swap(j);
-            break;
-          }
-          case 't':
-          case 'T':
-          case 'f':
-          case 'F': {
-            Json j(onBool());
-            obj[name].swap(j);
-            break;
-          }
-          case 'n':
-          case 'N': {
-            Json j(onNull());
-            obj[name].swap(j);
-            break;
-          }
-          case '.':
-          case '-':
-          case '+':
-          MYSPACE_CASE_0_9 : {
-            Json j(onNumber());
-            obj[name].swap(j);
-            break;
-          }
-          default:
-            MYSPACE_THROW("unexpected char : ", c);
+          } else {
+            obj[name] = onValue(c);
           }
         }
       }
     } catch (...) {
-      MYSPACE_THROW("decode object failed");
+      MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
-    return Json();
+    return Json{};
   }
 
-  string onString() {
+  std::string onString() {
     try {
       bool escape = false;
       skipWhite();
       assert_get('\"');
-      string result;
+      std::string result;
       for (;;) {
         auto c = get(false);
-        switch (c) {
-        case '\\':
+        if (c == '\\') {
           if (!escape) {
             escape = true;
           } else {
             escape = false;
             result.append(1, c);
           }
-          break;
-        case '\"':
-          if (escape) {
-            escape = false;
-            result.append(1, c);
+        } else if ('\"' == c) {
+          if (!escape)
             break;
-          }
-          goto END_ONSTRING;
-        default:
+          escape = false;
+          result.append(1, c);
+        } else {
           result.append(1, c);
         }
       }
-    END_ONSTRING:
       return result;
     } catch (...) {
-      MYSPACE_THROW("decode string failed");
+      MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
-    return "";
+    return std::string{};
   }
 
   double onNumber() {
     try {
       skipWhite();
-      stringstream result;
+      std::stringstream result;
       for (;;) {
         auto c = peek(false);
-        MYSPACE_DEV(" c = %s", c);
         switch (c) {
         case ']':
         case ',':
@@ -601,7 +478,7 @@ private:
       result >> x;
       return x;
     } catch (...) {
-      MYSPACE_THROW("decode number failed");
+      MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return 0;
   }
@@ -609,7 +486,7 @@ private:
   bool onBool() {
     try {
       skipWhite();
-      string x;
+      std::string x;
       for (int i = 0; i < 4; ++i) {
         x.append(1, get(false));
       }
@@ -623,7 +500,7 @@ private:
       }
       MYSPACE_THROW(" expect true/false");
     } catch (...) {
-      MYSPACE_THROW("decode bool failed");
+      MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return false;
   }
@@ -631,105 +508,183 @@ private:
   Json onNull() {
     try {
       skipWhite();
-      string x;
+      std::string x;
       for (int i = 0; i < 4; ++i) {
         x.append(1, get(false));
       }
       x = Strings::tolower(x);
-      MYSPACE_IF_THROW(x != "null");
+      MYSPACE_THROW_IF(x != "null");
       return Json();
     } catch (...) {
-      MYSPACE_THROW("decode null failed");
+      MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
-    return Json();
+    return Json{};
   }
 
   void assert_peek(char c) {
     auto p = peek();
-    MYSPACE_IF_THROW(p != c, ", c = \'", c, "\', peek = \'", p, "\'");
+    MYSPACE_THROW_IF_EX(JsonParser::Exception, p != c, ", c = \'", c,
+                        "\', peek = \'", p, "\'");
   }
   void assert_get(char c) {
     auto g = get();
-    MYSPACE_IF_THROW(g != c, ", c = \'", c, "\', get = \'", g, "\'");
+    MYSPACE_THROW_IF_EX(JsonParser::Exception, g != c, ", c = \'", c,
+                        "\', get = \'", g, "\'");
   }
   void skipWhite() {
-    for (; *src_; ++src_) {
-      if (std::iscntrl(*src_) || std::isblank(*src_))
+    for (; !src_.empty(); src_.erase(0, 1)) {
+      if (std::iscntrl(src_[0]) || std::isblank(src_[0]))
         continue;
       break;
     }
   }
   char get(bool skipwhite = true) {
-    // MYSPACE_DEV("get");
     if (skipwhite)
       skipWhite();
-    MYSPACE_IF_THROW(!*src_);
-    return *(src_++);
+    MYSPACE_THROW_IF_EX(JsonParser::Exception, src_.empty());
+    MYSPACE_DEFER(src_.erase(0, 1));
+    return src_[0];
   }
   char peek(bool skipwhite = true) {
-    // MYSPACE_DEV("peek");
     if (skipwhite)
       skipWhite();
-    MYSPACE_IF_THROW(!*src_);
-    return *(src_);
+    MYSPACE_THROW_IF_EX(JsonParser::Exception, src_.empty());
+    return src_[0];
   }
 
-  const char *src_ = nullptr;
-};
+  std::string src_;
+}; // namespace jsonimpl
+
 } // namespace jsonimpl
 
-inline Json Json::parse(const string &src) {
-  return jsonimpl::JsonParser(src.c_str()).parse();
+inline Json::Json(
+    std::initializer_list<std::pair<std::string, Json>> init) 
+    : Json(Json::Object(init.begin(), init.end())) {}
+inline Json::Json()  : value_(new_shared<jsonimpl::JsonNull>()) {}
+inline Json::Json(Json &&x)  { swap(x); }
+inline Json::Json(const Json::Object &x) 
+    : value_(new_shared<jsonimpl::JsonObject>(x)) {}
+inline Json::Json(Json::Object &&x) 
+    : value_(new_shared<jsonimpl::JsonObject>(std::move(x))) {}
+inline Json::Json(const Json::Array &x) 
+    : value_(new_shared<jsonimpl::JsonArray>(x)) {}
+inline Json::Json(Json::Array &&x) 
+    : value_(new_shared<jsonimpl::JsonArray>(std::move(x))) {}
+inline Json::Json(bool x) 
+    : value_(new_shared<jsonimpl::JsonBool>(x)) {}
+inline Json::Json(const std::string &x) 
+    : value_(new_shared<jsonimpl::JsonString>(x)) {}
+inline Json::Json(std::string &&x) 
+    : value_(new_shared<jsonimpl::JsonString>(std::move(x))) {}
+inline Json::Json(const char *x) 
+    : value_(new_shared<jsonimpl::JsonString>(x)){};
+inline Json::Json(double x) 
+    : value_(new_shared<jsonimpl::JsonNumber>(x)) {}
+inline Json::Json(float x)  : Json((double)x) {}
+inline Json::Json(int32_t x)  : Json((double)x) {}
+inline Json::Json(uint32_t x)  : Json((double)x) {}
+inline Json::Json(int16_t x)  : Json((double)x) {}
+inline Json::Json(uint16_t x)  : Json((double)x) {}
+inline Json::Json(int64_t x)  : Json((double)x) {}
+inline Json::Json(uint64_t x)  : Json((double)x) {}
+inline Json::Json(const Json &x)  { copy(x); }
+inline void Json::swap(Json &j)  {
+  if (value_ != j.value_) {
+    value_.swap(j.value_);
+  }
 }
-inline Json Json::parse(const string &src, string &) {
-  return jsonimpl::JsonParser(src.c_str()).parse();
+inline void Json::copy(const Json &x)  {
+  if (value_ != x.value_) {
+    if (!x.value_)
+      value_.reset();
+    else
+      value_ = x.value_->clone();
+  }
 }
-inline Json Json::parse(const char *src) {
-  return jsonimpl::JsonParser(src).parse();
+inline void Json::share(Json &x)  {
+  if (value_ != x.value_)
+    value_ = x.value_;
 }
-inline Json Json::parse(const char *src, string &) {
-  return jsonimpl::JsonParser(src).parse();
+inline Json &Json::operator=(const Json &x)  {
+  copy(x);
+  return *this;
 }
-inline const Json &Json::operator[](const string &key) const {
-  return value_->operator[](key);
+inline Json &Json::operator=(Json &&x)  {
+  swap(x);
+  return *this;
 }
-inline const Json &Json::operator[](size_t idx) const {
+
+inline std::string Json::dump() const  {
+  try {
+    return value_->dump();
+  } catch (...) {
+    MYSPACE_DEV_EXCEPTION();
+  }
+  return std::string{};
+}
+
+inline Json &Json::operator[](const std::string &key)  {
+  try {
+    return value_->operator[](key);
+  } catch (...) {
+    value_ = new_shared<jsonimpl::JsonObject>(Json::Object{});
+    return value_->operator[](key);
+  }
+}
+inline Json &Json::operator[](size_t idx) throw(Json::RangeError,
+                                                Json::TypeError) {
   return value_->operator[](idx);
 }
-inline const string &Json::stringValue() const { return value_->stringValue(); }
-inline const Json::Array &Json::arrayValue() const {
+inline std::string &Json::stringValue() throw(Json::TypeError) {
+  return value_->stringValue();
+}
+inline Json::Array &Json::arrayValue() throw(Json::TypeError) {
   return value_->arrayValue();
 }
-inline const Json::Object &Json::objectValue() const {
+inline Json::Object &Json::objectValue() throw(Json::TypeError) {
   return value_->objectValue();
 }
-inline double Json::numberValue() const { return value_->numberValue(); }
-inline bool Json::boolValue() const { return value_->boolValue(); }
+inline double &Json::numberValue() throw(Json::TypeError) {
+  return value_->numberValue();
+}
+inline bool &Json::boolValue() throw(Json::TypeError) {
+  return value_->boolValue();
+}
 
-inline Json::Type Json::type() const { return value_->type(); }
-inline bool Json::isString() const { return value_->isString(); }
-inline bool Json::isArray() const { return value_->isArray(); }
-inline bool Json::isObject() const { return value_->isObject(); }
-inline bool Json::isNumber() const { return value_->isNumber(); }
-inline bool Json::isBool() const { return value_->isBool(); }
-inline bool Json::isNull() const { return value_->isNull(); }
+inline Json::Type Json::type() const  { return value_->type(); }
+inline bool Json::isString() const  { return value_->isString(); }
+inline bool Json::isArray() const  { return value_->isArray(); }
+inline bool Json::isObject() const   { return value_->isObject(); }
+inline bool Json::isNumber() const   { return value_->isNumber(); }
+inline bool Json::isBool() const   { return value_->isBool(); }
+inline bool Json::isNull() const   { return value_->isNull(); }
 
-inline bool Json::operator==(const Json &x) const {
+inline bool Json::operator==(const Json &x) const  {
   return value_->operator==(x.value_.get());
 }
-inline bool Json::operator!=(const Json &x) const {
+inline bool Json::operator!=(const Json &x) const  {
   return value_->operator!=(x.value_.get());
 }
-inline bool Json::operator<(const Json &x) const {
+inline bool Json::operator<(const Json &x) const  {
   return value_->operator<(x.value_.get());
 }
-inline bool Json::operator<=(const Json &x) const {
+inline bool Json::operator<=(const Json &x) const  {
   return value_->operator<=(x.value_.get());
 }
-inline bool Json::operator>(const Json &x) const {
+inline bool Json::operator>(const Json &x) const  {
   return value_->operator>(x.value_.get());
 }
-inline bool Json::operator>=(const Json &x) const {
+inline bool Json::operator>=(const Json &x) const  {
   return value_->operator>=(x.value_.get());
 }
+
+inline Json Json::parse(const std::string &src) throw(Json::ParseError) {
+  try {
+    return jsonimpl::JsonParser(src).parse();
+  } catch (...) {
+    MYSPACE_DEV_RETHROW_EX(Json::ParseError)
+  }
+  return Json{}; // not reached
+}
+
 MYSPACE_END

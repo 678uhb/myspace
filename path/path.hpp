@@ -2,35 +2,35 @@
 
 #pragma once
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 
 MYSPACE_BEGIN
 
 class Path {
 public:
-  static string basename(const string &path);
+  static std::string basename(const std::string &path);
 
-  static string basenameNoext(const string &path);
+  static std::string basenameNoext(const std::string &path);
 
-  static deque<string> splitext(const string &path);
+  static std::deque<std::string> splitext(const std::string &path);
 
-  static string dirname(const string &path);
+  static std::string dirname(const std::string &path);
 };
 
-inline string Path::basename(const string &path) {
+inline std::string Path::basename(const std::string &path) {
   auto pos = path.find_last_of("\\/");
 
-  if (pos != string::npos)
+  if (pos != std::string::npos)
     return path.substr(pos + 1);
 
   return path;
 }
 
-inline string Path::basenameNoext(const string &path) {
-  return move(splitext(basename(path))[0]);
+inline std::string Path::basenameNoext(const std::string &path) {
+  return std::move(splitext(basename(path))[0]);
 }
 
-inline deque<string> Path::splitext(const string &path) {
+inline std::deque<std::string> Path::splitext(const std::string &path) {
   auto pos = path.find_last_of('.');
 
   if (pos == path.npos) {
@@ -40,7 +40,7 @@ inline deque<string> Path::splitext(const string &path) {
   return {path.substr(0, pos), path.substr(pos + 1)};
 }
 
-inline string Path::dirname(const string &path) {
+inline std::string Path::dirname(const std::string &path) {
   auto pos = path.find_last_of("/\\");
 
   if (pos == path.npos)

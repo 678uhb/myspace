@@ -1,26 +1,30 @@
 
 #pragma once
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 
 MYSPACE_BEGIN
 
-template <class t, class... a>
-inline typename enable_if<!is_array<t>::value, unique_ptr<t>>::type
-new_unique(a &&... args) {
-  return unique_ptr<t>(new t(forward<a>(args)...));
+template <class Type, class... Arguments>
+inline typename std::enable_if<!std::is_array<Type>::value,
+                               std::unique_ptr<Type>>::type
+new_unique(Arguments &&... args) {
+  return std::unique_ptr<Type>(new Type(std::forward<Arguments>(args)...));
 }
 
-template <class t>
-inline typename enable_if<is_array<t>::value && extent<t>::value == 0,
-                          unique_ptr<t>>::type
+template <class Type>
+inline typename std::enable_if<std::is_array<Type>::value &&
+                                   std::extent<Type>::value == 0,
+                               std::unique_ptr<Type>>::type
 new_unique(size_t count) {
-  typedef typename remove_extent<t>::type T;
-  return unique_ptr<t>(new T[count]());
+  typedef typename std::remove_extent<Type>::type T;
+  return std::unique_ptr<Type>(new T[count]());
 }
 
-template <class t, class... a> inline shared_ptr<t> new_shared(a &&... args) {
-  return move(make_shared<t>(forward<a>(args)...));
+template <class Type, class... Arguments>
+inline std::shared_ptr<Type> 
+new_shared(Arguments &&... args) {
+  return std::move(std::make_shared<Type>(std::forward<Arguments>(args)...));
 }
 
 MYSPACE_END

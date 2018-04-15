@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 #include "myspace/exception/exception.hpp"
 #include "myspace/strings/strings.hpp"
 
@@ -10,22 +10,24 @@ MYSPACE_BEGIN
 
 class Config {
 public:
-  Config(const string &path);
+  Config(const std::string &path);
 
-  template <class X = string>
-  X get(const string &section, const string &key, const X &defaut) const;
+  template <class X = std::string>
+  X get(const std::string &section, const std::string &key,
+        const X &defaut) const;
 
-  template <class X = string>
-  X get(const string &section, const string &key) const;
+  template <class X = std::string>
+  X get(const std::string &section, const std::string &key) const;
 
 private:
-  unordered_map<string, unordered_map<string, string>> dict_;
+  std::unordered_map<std::string, std::unordered_map<std::string, std::string>>
+      dict_;
 };
 
-inline Config::Config(const string &path) {
+inline Config::Config(const std::string &path) {
   bool multiline = false;
-  string line, section, key, value;
-  for (ifstream fs(path); getline(fs, line);) {
+  std::string line, section, key, value;
+  for (std::ifstream fs(path); getline(fs, line);) {
     line = Strings::strip(line);
     if (line.empty())
       continue;
@@ -67,7 +69,7 @@ inline Config::Config(const string &path) {
 }
 
 template <class X>
-inline X Config::get(const string &section, const string &key,
+inline X Config::get(const std::string &section, const std::string &key,
                      const X &defaut) const {
   auto itr = dict_.find(section);
   if (itr == dict_.end())
@@ -79,7 +81,7 @@ inline X Config::get(const string &section, const string &key,
 }
 
 template <class X>
-inline X Config::get(const string &section, const string &key) const {
+inline X Config::get(const std::string &section, const std::string &key) const {
   auto itr = dict_.find(section);
   if (itr == dict_.end())
     MYSPACE_THROW("section (", section, ") not found");

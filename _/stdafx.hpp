@@ -22,15 +22,24 @@
 #undef FD_SETSIZE
 #define FD_SETSIZE 1024 * 1024
 
+#include <Windows.h>
+
 #include <Objbase.h>
 #include <WS2tcpip.h>
 #include <WinSock2.h>
-#include <Windows.h>
+//#include <Windns.h>
 #include <corecrt_io.h>
 #include <direct.h>
+
+#include <Iphlpapi.h>
+
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "Iphlpapi.lib")
+//#pragma comment(lib, "Dnsapi.lib")
 
 #elif defined(MYSPACE_LINUX)
+
+#include <unistd.h>
 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -40,8 +49,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <ucontext.h>
-#include <unistd.h>
 #include <uuid/uuid.h>
+
 #else
 
 #error "unknown platform"
@@ -55,7 +64,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
-// cpp headers
+//  cpp headers
 #include <algorithm>
 #include <atomic>
 #include <bitset>
@@ -70,6 +79,7 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <iterator>
 #include <list>
 #include <map>
 #include <set>
@@ -84,10 +94,10 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-using namespace std;
-using namespace chrono;
-using namespace this_thread;
-using namespace placeholders;
+// using namespace std;
+// using namespace chrono;
+// using namespace this_thread;
+// using namespace placeholders;
 
 // C++ pre-C++98: __cplusplus is 1.
 // C++98: __cplusplus is 199711L.
@@ -97,7 +107,7 @@ using namespace placeholders;
 // C++17: __cplusplus is 201703L.
 // #if defined(MYSPACE_WINDOWS) && defined(MYSPACE_SHARED)
 
-// #ifdef MYSPACE_EXPORTS
+// #if defined(MYSPACE_EXPORTS)
 // #define MYSPACE_API __declspec(dllexport)
 // #else
 // #define MYSPACE_API __declspec(dllimport)
@@ -111,3 +121,5 @@ using namespace placeholders;
 
 #define MYSPACE_BEGIN namespace myspace {
 #define MYSPACE_END }
+
+#include "myspace/_/macro.hpp"

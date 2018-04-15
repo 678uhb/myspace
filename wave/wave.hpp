@@ -1,6 +1,6 @@
 #pragma once
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 
 MYSPACE_BEGIN
 

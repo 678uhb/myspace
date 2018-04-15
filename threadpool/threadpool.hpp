@@ -1,76 +1,78 @@
 
 #pragma once
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 #include "myspace/critical/critical.hpp"
 #include "myspace/mutex/mutex.hpp"
-#include "myspace/scope/scope.hpp"
+#include "myspace/defer/defer.hpp"
 
 MYSPACE_BEGIN
 
 class ThreadPool {
 public:
-  ThreadPool(size_t maxThreads = thread::hardware_concurrency());
+  ThreadPool(size_t max_threads = std::thread::hardware_concurrency());
 
   ~ThreadPool();
 
-  template <class ft, class... argst>
-  auto pushFront(ft &&f, argst &&... args)
-      -> future<typename result_of<ft(argst...)>::type>;
+  template <class Function, class... Arguments>
+  auto pushFront(Function &&f, Arguments &&... args)
+      -> std::future<typename std::result_of<Function(Arguments...)>::type>;
 
-  template <class ft, class... argst>
-  auto pushBack(ft &&f, argst &&... args)
-      -> future<typename result_of<ft(argst...)>::type>;
+  template <class Function, class... Arguments>
+  auto pushBack(Function &&f, Arguments &&... args)
+      -> std::future<typename std::result_of<Function(Arguments...)>::type>;
 
 private:
-  template <class ft, class... argst>
-  auto push(bool putfront, ft &&f, argst &&... args)
-      -> future<typename result_of<ft(argst...)>::type>;
+  template <class Function, class... Arguments>
+  auto push(bool putfront, Function &&f, Arguments &&... args)
+      -> std::future<typename std::result_of<Function(Arguments...)>::type>;
 
   void workerProc();
 
   bool stop_ = false;
 
-  Critical<list<function<void()>>> jobs_;
+  Critical<std::list<std::function<void()>>> jobs_;
 
-  deque<thread> threads_;
+  std::deque<std::thread> threads_;
 };
 
-ThreadPool::ThreadPool(size_t maxThreads) {
-  if (maxThreads == 0)
-    maxThreads = thread::hardware_concurrency();
-  if (maxThreads == 0)
-    maxThreads = 1;
-  for (size_t i = 0; i < maxThreads; ++i) {
+inline ThreadPool::ThreadPool(size_t max_threads) {
+  if (max_threads == 0)
+    max_threads = std::thread::hardware_concurrency();
+  if (max_threads == 0)
+    max_threads = 1;
+  for (size_t i = 0; i < max_threads; ++i) {
     threads_.emplace_back([this]() { this->workerProc(); });
   }
 }
 
-template <class ft, class... argst>
-auto ThreadPool::pushFront(ft &&f, argst &&... args)
-    -> future<typename result_of<ft(argst...)>::type> {
-  return move(push(true, forward<ft>(f), forward<argst>(args)...));
+template <class Function, class... Arguments>
+inline auto ThreadPool::pushFront(Function &&f, Arguments &&... args)
+    -> std::future<typename std::result_of<Function(Arguments...)>::type> {
+  return std::move(
+      push(true, std::forward<Function>(f), std::forward<Arguments>(args)...));
 }
 
-template <class ft, class... argst>
-auto ThreadPool::pushBack(ft &&f, argst &&... args)
-    -> future<typename result_of<ft(argst...)>::type> {
-  return move(push(false, forward<ft>(f), forward<argst>(args)...));
+template <class Function, class... Arguments>
+inline auto ThreadPool::pushBack(Function &&f, Arguments &&... args)
+    -> std::future<typename std::result_of<Function(Arguments...)>::type> {
+  return std::move(
+      push(false, std::forward<Function>(f), std::forward<Arguments>(args)...));
 }
 
-ThreadPool::~ThreadPool() {
+inline ThreadPool::~ThreadPool() {
   stop_ = true;
   jobs_.notify_all();
-  for (auto &thread : threads_)
-    thread.join();
+  for (auto &thr : threads_)
+    thr.join();
 }
 
-template <class ft, class... argst>
-auto ThreadPool::push(bool putfront, ft &&f, argst &&... args)
-    -> future<typename result_of<ft(argst...)>::type> {
-  using return_t = typename result_of<ft(argst...)>::type;
-  auto job = make_shared<packaged_task<return_t()>>(
-      bind(forward<ft>(f), forward<argst>(args)...));
+template <class Function, class... Arguments>
+inline auto ThreadPool::push(bool putfront, Function &&f, Arguments &&... args)
+    -> std::future<typename std::result_of<Function(Arguments...)>::type> {
+  using return_t = typename std::result_of<Function(Arguments...)>::type;
+  auto job = new_shared<std::packaged_task<return_t()>>(
+      std::bind(std::forward<Function>(f), std::forward<Arguments>(args)...));
   auto ret = job->get_future();
   MYSPACE_IF_LOCK(jobs_) {
     if (putfront) {
@@ -80,17 +82,17 @@ auto ThreadPool::push(bool putfront, ft &&f, argst &&... args)
     }
   }
   jobs_.notify_one();
-  return move(ret);
+  return std::move(ret);
 }
 
-void ThreadPool::workerProc() {
+inline void ThreadPool::workerProc() {
   for (;;) {
-    function<void()> job;
+    std::function<void()> job;
     MYSPACE_IF_LOCK(jobs_) {
       if (jobs_.empty()) {
         if (stop_)
           break;
-        jobs_.wait_for(__ul, seconds(1),
+        jobs_.wait_for(__ul, std::chrono::seconds(1),
                        [this]() { return !jobs_.empty() || stop_; });
         continue;
       }

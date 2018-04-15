@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 #include "myspace/memory/memory.hpp"
 #include "myspace/path/path.hpp"
 
@@ -9,60 +9,56 @@ MYSPACE_BEGIN
 
 class Process {
 public:
-  static string getMyFullName();
+  static std::string getMyFullName();
 
-  static string getMyName();
+  static std::string getMyName();
 
-  static string getMyNameNoExt();
+  static std::string getMyNameNoExt();
 
-  static string cwd(const string &path = "");
+  static std::string cwd(const std::string &path = "");
 };
 
-inline string Process::getMyFullName() {
-  const size_t maxPath = 4096;
-
-  auto name = new_unique<char[]>(maxPath);
+namespace processimpl {
+inline std::string pwd() {
   int n = 0;
+  static constexpr size_t max_path = 4096;
+  auto name = new_unique<char[]>(max_path);
 #if defined(MYSPACE_WINDOWS)
-  n = GetModuleFileName(NULL, name.get(), maxPath);
-#elif defined(MYSPACE_LINUX)
-  n = readlink("/proc/self/exe", name.get(), maxPath);
+  n = ::GetCurrentDirectory(max_path, name.get());
+#else
+  n = ::readlink("/proc/self/cwd", name.get(), max_path);
 #endif
   if (n <= 0)
     return "";
-  return string(name.get(), n);
+  return std::string(name.get(), n);
+}
+} // namespace processimpl
+
+inline std::string Process::getMyFullName() {
+  static constexpr size_t max_path = 4096;
+  auto name = new_unique<char[]>(max_path);
+  int n = 0;
+#if defined(MYSPACE_WINDOWS)
+  n = ::GetModuleFileName(nullptr, name.get(), max_path);
+#elif defined(MYSPACE_LINUX)
+  n = ::readlink("/proc/self/exe", name.get(), max_path);
+#endif
+  if (n <= 0)
+    return "";
+  return std::string(name.get(), n);
 }
 
-inline string Process::getMyName() {
+inline std::string Process::getMyName() {
   return Path::basename(getMyFullName());
 }
 
-inline string Process::getMyNameNoExt() {
+inline std::string Process::getMyNameNoExt() {
   return Path::basenameNoext(getMyFullName());
 }
 
-inline string Process::cwd(const string &path) {
+inline std::string Process::cwd(const std::string &path) {
   if (path.empty()) {
-    const size_t maxPath = 4096;
-
-    auto name = new_unique<char[]>(maxPath);
-
-#if defined(MYSPACE_WINDOWS)
-
-    auto n = GetCurrentDirectory(maxPath, name.get());
-
-    if (n <= 0)
-      return "";
-
-    return string(name.get(), n);
-#else
-    auto n = readlink("/proc/self/cwd", name.get(), maxPath);
-
-    if (n <= 0)
-      return "";
-
-    return string(name.get(), n);
-#endif
+    return processimpl::pwd();
   }
 #if defined(MYSPACE_WINDOWS)
   SetCurrentDirectory(path.c_str());

@@ -1,18 +1,18 @@
 
-#include "myspace/_/include.hpp"
+#include "myspace/_/stdafx.hpp"
 #include "myspace/wave/wave.hpp"
 
 MYSPACE_BEGIN
 
 class WavFile {
 public:
-  WavFile(const string &filename, WaveFormat format);
+  WavFile(const std::string &filename, WaveFormat format);
 
   ~WavFile();
 
   WavFile &append(const char *voice, size_t length);
 
-  WavFile &append(const string &voice);
+  WavFile &append(const std::string &voice);
 
 private:
   void close();
@@ -23,37 +23,35 @@ private:
 
   WaveHead head_;
 
-  string filename_;
+  std::string filename_;
 };
 
-WavFile::WavFile(const string &filename, WaveFormat format)
+inline WavFile::WavFile(const std::string &filename, WaveFormat format)
     : head_(format), filename_(filename) {}
 
-WavFile::~WavFile() {
+inline WavFile::~WavFile() {
   // close();
 }
 
-WavFile &WavFile::append(const char *voice, size_t length) {
+inline WavFile &WavFile::append(const char *voice, size_t length) {
   if (voice && length > 0) {
     addSize(length);
 
     resetHead();
 
-    ofstream(filename_.c_str(), ios::out | ios::binary | ios::app)
+    std::ofstream(filename_.c_str(),
+                  std::ios::out | std::ios::binary | std::ios::app)
         .write(voice, length)
         .flush();
   }
   return *this;
 }
-
-WavFile &WavFile::append(const string &voice) {
+inline WavFile &WavFile::append(const std::string &voice) {
   return append(voice.c_str(), voice.size());
 }
-
-void WavFile::close() { resetHead(); }
-
-WavFile &WavFile::resetHead() {
-  fstream fs(filename_, ios::out | ios::binary);
+inline void WavFile::close() { resetHead(); }
+inline WavFile &WavFile::resetHead() {
+  std::fstream fs(filename_, std::ios::out | std::ios::binary);
 
   if (fs.is_open()) {
     fs.seekp(0);
@@ -63,8 +61,7 @@ WavFile &WavFile::resetHead() {
 
   return *this;
 }
-
-WavFile &WavFile::addSize(size_t n) {
+inline WavFile &WavFile::addSize(size_t n) {
   head_.riff_size_ += n;
 
   head_.data_size_ += n;
