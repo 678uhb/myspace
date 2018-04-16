@@ -49,11 +49,11 @@ public:
 
   bool isBlocked() const;
 
-  operator bool();
+  //operator bool();
 
   int getFd() const;
 
-  bool isConnected();
+  //bool isConnected();
 
   void close();
 
@@ -332,43 +332,43 @@ inline Socket &Socket::setNonBlock() { return setBlock(false); }
 
 inline bool Socket::isBlocked() const { return is_blocked_; }
 
-inline Socket::operator bool() { return isConnected(); }
+//inline Socket::operator bool() { return isConnected(); }
 
 inline int Socket::getFd() const { return sock_; }
-
-inline bool Socket::isConnected() {
-  auto isblocked = is_blocked_;
-  MYSPACE_DEFER(setBlock(isblocked));
-again:
-  char c;
-  setNonBlock();
-  MYSPACE_DEV("is connected ?");
-  auto n = ::recv(sock_, &c, 1, MSG_PEEK);
-  MYSPACE_DEV("is connected ?? n = ", n);
-  if (n == 0) {
-    MYSPACE_DEV("is connected ??, broken ! n = ", n);
-    return false;
-  }
-
-  if (n > 0) {
-    MYSPACE_DEV("is connected ?? yes, return > 0 , n = ", n);
-    return true;
-  }
-  auto e = Error::lastNetError();
-
-  switch (e) {
-  case Error::WOULD_BLOCK:
-  case Error::IN_PROGRESS:
-    MYSPACE_DEV("is connected ?? yes ");
-    return true;
-  case Error::INTERRUPTED:
-    MYSPACE_DEV("is connected ?? sorry, again! ");
-    goto again;
-  default:
-    MYSPACE_DEV("is connected ?? no! err = ", e);
-    return false;
-  }
-}
+//
+//inline bool Socket::isConnected() {
+//  auto isblocked = is_blocked_;
+//  MYSPACE_DEFER(setBlock(isblocked));
+//again:
+//  char c;
+//  setNonBlock();
+//  MYSPACE_DEV("is connected ?");
+//  auto n = ::recv(sock_, &c, 1, MSG_PEEK);
+//  MYSPACE_DEV("is connected ?? n = ", n);
+//  if (n == 0) {
+//    MYSPACE_DEV("is connected ??, broken ! n = ", n);
+//    return false;
+//  }
+//
+//  if (n > 0) {
+//    MYSPACE_DEV("is connected ?? yes, return > 0 , n = ", n);
+//    return true;
+//  }
+//  auto e = Error::lastNetError();
+//
+//  switch (e) {
+//  case Error::WOULD_BLOCK:
+//  case Error::IN_PROGRESS:
+//    MYSPACE_DEV("is connected ?? yes ");
+//    return true;
+//  case Error::INTERRUPTED:
+//    MYSPACE_DEV("is connected ?? sorry, again! ");
+//    goto again;
+//  default:
+//    MYSPACE_DEV("is connected ?? no! err = ", e);
+//    return false;
+//  }
+//}
 
 inline void Socket::close() {
   if (sock_ >= 0) {
@@ -406,7 +406,7 @@ Socket::connect(const Addr &addr,
 
   for (auto this_time = std::chrono::high_resolution_clock::now(),
             begin_time = this_time;
-       !isConnected() && this_time - begin_time <= timeout;
+       this_time - begin_time <= timeout;
        this_time = std::chrono::high_resolution_clock::now()) {
 
     MYSPACE_DEV(" before connect ");
@@ -429,8 +429,8 @@ Socket::connect(const Addr &addr,
     case Error::ALREADY:
     case Error::INTERRUPTED:
     case Error::IN_PROGRESS: {
-      if (isConnected())
-        return *this;
+      /*if (isConnected())
+        return *this;*/
 
       auto sel = new_shared<Detector>();
 
