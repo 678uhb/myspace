@@ -8,20 +8,21 @@ MYSPACE_BEGIN
 
 namespace tcp {
 
-class Accepter {
+class Acceptor {
 public:
-  MYSPACE_EXCEPTION_DEFINE(Exception, myspace::Exception)
+  MYSPACE_EXCEPTION_DEFINE(AcceptorError, myspace::Exception)
+
 public:
-  Accepter();
+  Acceptor();
 
-  Accepter(uint16_t port) throw(Accepter::Exception);
+  Acceptor(uint16_t port) noexcept(false);
 
-  ~Accepter();
+  ~Acceptor();
 
   std::shared_ptr<tcp::Socket>
-  accept(std::chrono::high_resolution_clock::duration timeout);
+  accept(std::chrono::high_resolution_clock::duration timeout) noexcept(false);
 
-  std::shared_ptr<tcp::Socket> accept();
+  std::shared_ptr<tcp::Socket> accept() noexcept(false);
 
   operator int() const;
 
@@ -29,9 +30,9 @@ private:
   int sock_ = tcp::Socket();
 };
 
-inline Accepter::Accepter() {}
+inline Acceptor::Acceptor() {}
 
-inline Accepter::Accepter(uint16_t port) throw(Accepter::Exception) {
+inline Acceptor::Acceptor(uint16_t port) noexcept(false) {
   auto sock = (int)::socket(AF_INET, SOCK_STREAM, 0);
   Defer xs([&sock]() { Socket::close(sock); });
 
@@ -42,16 +43,19 @@ inline Accepter::Accepter(uint16_t port) throw(Accepter::Exception) {
   addr.sin_port = htons(port);
   addr.sin_addr.s_addr = INADDR_ANY;
 
-  MYSPACE_THROW_IF_EX(Accepter::Exception,
+  MYSPACE_THROW_IF_EX(AcceptorError,
                       0 != ::bind(sock, (sockaddr *)&addr, sizeof(addr)));
-  MYSPACE_THROW_IF_EX(Accepter::Exception, 0 != ::listen(sock, 1024));
+  MYSPACE_THROW_IF_EX(AcceptorError, 0 != ::listen(sock, 1024));
 
   xs.dismiss();
   sock_ = sock;
 }
 
-inline std::shared_ptr<tcp::Socket>
-Accepter::accept(std::chrono::high_resolution_clock::duration timeout) {
+inline std::shared_ptr<tcp::Socket> Acceptor::accept(
+    std::chrono::high_resolution_clock::duration timeout) noexcept(false) {
+
+  SocketOpt::setBlock(sock_, false);
+
   for (auto this_time = std::chrono::high_resolution_clock::now(),
             begin_time = this_time;
        this_time - begin_time <= timeout;
@@ -65,18 +69,23 @@ Accepter::accept(std::chrono::high_resolution_clock::duration timeout) {
     if (n >= 0) {
       auto sock = new_shared<tcp::Socket>(n);
       return sock;
+    } else {
+      auto e = Error::lastError();
+      if (e == std::errc::not_a_socket || e == std::errc::invalid_argument) {
+        MYSPACE_THROW_EX(AcceptorError);
+      }
+      auto sel = new_shared<Detector>();
+      sel->add(this);
+      sel->wait(timeout - (this_time - begin_time));
     }
-
-    auto sel = new_shared<Detector>();
-
-    sel->add(this);
-
-    sel->wait(timeout - (this_time - begin_time));
   }
   return nullptr;
 }
 
-inline std::shared_ptr<tcp::Socket> Accepter::accept() {
+inline std::shared_ptr<tcp::Socket> Acceptor::accept() noexcept(false) {
+
+  SocketOpt::setBlock(sock_, true);
+
   for (;;) {
     sockaddr_in addr;
 
@@ -88,19 +97,20 @@ inline std::shared_ptr<tcp::Socket> Accepter::accept() {
       auto sock = new_shared<tcp::Socket>(n);
       return sock;
     }
-
+    auto e = Error::lastError();
+    if (e == std::errc::not_a_socket || e == std::errc::invalid_argument) {
+      MYSPACE_THROW_EX(AcceptorError);
+    }
     auto sel = new_shared<Detector>();
-
     sel->add(this);
-
     sel->wait();
   }
   return nullptr;
 }
 
-inline Accepter::~Accepter() { Socket::close(sock_); }
+inline Acceptor::~Acceptor() { Socket::close(sock_); }
 
-inline Accepter::operator int() const { return sock_; }
+inline Acceptor::operator int() const { return sock_; }
 } // namespace tcp
 
 MYSPACE_END

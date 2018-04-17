@@ -11,6 +11,8 @@
 // system headers
 #if defined(MYSPACE_WINDOWS)
 
+#pragma warning(disable : 4290)
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif

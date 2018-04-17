@@ -165,17 +165,17 @@ public:
     try {
       stream_.hold(m.header_.id_);
       stream_.hold(m.header_.flags_);
-      stream_.hold(m.header_.qdcount_ = m.question_.size());
-      stream_.hold(m.header_.ancount_ = m.answer_.size());
-      stream_.hold(m.header_.nscount_ = m.authority_.size());
-      stream_.hold(m.header_.arcount_ = m.additional_.size());
+      stream_.hold(m.header_.qdcount_ = (uint16_t)m.question_.size());
+      stream_.hold(m.header_.ancount_ = (uint16_t)m.answer_.size());
+      stream_.hold(m.header_.nscount_ = (uint16_t)m.authority_.size());
+      stream_.hold(m.header_.arcount_ = (uint16_t)m.additional_.size());
       for (const auto &x : m.question_) {
-        stream_.hold(compress(x.qname_, stream_.holdSize()));
+        stream_.hold(compress(x.qname_, (uint16_t)stream_.holdSize()));
         stream_.hold(x.qtype_);
         stream_.hold(x.qclass_);
       }
       for (const auto &x : m.answer_) {
-        stream_.hold(compress(x.name_, stream_.holdSize()));
+        stream_.hold(compress(x.name_, (uint16_t)stream_.holdSize()));
         stream_.hold(x.type_);
         stream_.hold(x.class_);
         stream_.hold(x.ttl_);
@@ -183,7 +183,7 @@ public:
         stream_.hold(x.rdata_);
       }
       for (const auto &x : m.authority_) {
-        stream_.hold(compress(x.name_, stream_.holdSize()));
+        stream_.hold(compress(x.name_, (uint16_t)stream_.holdSize()));
         stream_.hold(x.type_);
         stream_.hold(x.class_);
         stream_.hold(x.ttl_);
@@ -191,7 +191,7 @@ public:
         stream_.hold(x.rdata_);
       }
       for (const auto &x : m.additional_) {
-        stream_.hold(compress(x.name_, stream_.holdSize()));
+        stream_.hold(compress(x.name_, (uint16_t)stream_.holdSize()));
         stream_.hold(x.type_);
         stream_.hold(x.class_);
         stream_.hold(x.ttl_);
@@ -292,7 +292,7 @@ private:
         compressed.append(1, (uint8_t)label.size());
         compressed.append(label);
         dict_[labels] = offset;
-        offset += label.size() + 1;
+        offset += (uint16_t)(label.size() + 1);
       }
       labels.pop_front();
     }
@@ -309,7 +309,7 @@ private:
       MYSPACE_THROW_IF(pointer >= compressed_.size());
       auto c = compressed_[pointer];
       if (0xc0 & c) {
-        MYSPACE_THROW_IF(pointer + 2 > compressed_.size());
+        MYSPACE_THROW_IF((size_t)pointer + 2 > compressed_.size());
         pointer = Codec::ntoh(*(uint16_t *)(compressed_.c_str() + pointer));
         pointer &= ~0xc000;
       } else {
@@ -320,9 +320,9 @@ private:
           break;
         if (!dst.empty())
           dst.append(1, '.');
-        MYSPACE_THROW_IF(pointer + len > compressed_.size());
+        MYSPACE_THROW_IF(pointer + len > (uint16_t)compressed_.size());
         dst.append(compressed_.substr(pointer, len));
-        pointer += len;
+        pointer += (uint16_t)len;
       }
     }
   }
@@ -383,7 +383,7 @@ inline std::deque<Addr> systemDnsList() {
     auto tokens = Strings::splitOf(line, " \t");
     std::string ip;
     if (tokens.size() == 2 && Strings::tolower(tokens[0]) == "nameserver") {
-      ip = Strings::strip(tokens[1]);
+      ip = Strings::stripOf(tokens[1]);
     }
     if (!ip.empty()) {
       result.emplace_back(ip, 53);
@@ -407,11 +407,11 @@ inline std::deque<Addr> systemDnsList() {
     }
     ret = ::GetNetworkParams(fi, &outbuflen);
     if (ret == ERROR_SUCCESS) {
-      std::string ip = Strings::strip(fi->DnsServerList.IpAddress.String);
+      std::string ip = Strings::stripOf(fi->DnsServerList.IpAddress.String);
       result.emplace_back(ip, 53);
       auto pIPAddr = fi->DnsServerList.Next;
       while (pIPAddr) {
-        ip = Strings::strip(pIPAddr->IpAddress.String);
+        ip = Strings::stripOf(pIPAddr->IpAddress.String);
         result.emplace_back(ip, 53);
         pIPAddr = pIPAddr->Next;
       }

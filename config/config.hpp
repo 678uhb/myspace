@@ -28,7 +28,7 @@ inline Config::Config(const std::string &path) {
   bool multiline = false;
   std::string line, section, key, value;
   for (std::ifstream fs(path); getline(fs, line);) {
-    line = Strings::strip(line);
+    line = Strings::stripOf(line);
     if (line.empty())
       continue;
     if (line[0] == '#' || line[0] == ';')
@@ -39,16 +39,16 @@ inline Config::Config(const std::string &path) {
       if (!multiline) {
         if (line.back() != '\\') {
           auto pos = line.find_first_of('=');
-          key = Strings::strip(line.substr(0, pos));
-          value = Strings::strip(line.substr(pos + 1));
+          key = Strings::stripOf(line.substr(0, pos));
+          value = Strings::stripOf(line.substr(pos + 1));
           dict_[section][key] = value;
           value.clear();
         } else {
           line.pop_back();
-          line = Strings::strip(line);
+          line = Strings::stripOf(line);
           auto pos = line.find_first_of('=');
-          key = Strings::strip(line.substr(0, pos));
-          value = Strings::strip(line.substr(pos + 1));
+          key = Strings::stripOf(line.substr(0, pos));
+          value = Strings::stripOf(line.substr(pos + 1));
           multiline = true;
         }
       } else {
@@ -59,7 +59,7 @@ inline Config::Config(const std::string &path) {
           value.clear();
         } else {
           line.pop_back();
-          value += Strings::strip(line);
+          value += Strings::stripOf(line);
         }
       }
     }

@@ -9,9 +9,9 @@ MYSPACE_BEGIN
 
 class Addr {
 public:
-  static Addr getLocal(int sock);
+  static Addr local(int sock);
 
-  static Addr getPeer(int sock);
+  static Addr peer(int sock);
 
   static std::string inetNtop(const in_addr &addr, int32_t family = AF_INET);
 
@@ -35,6 +35,8 @@ public:
 
   Addr &setPort(uint16_t port);
 
+  Addr &setFamily(int32_t family);
+
   const sockaddr_in &addr() const;
 
 private:
@@ -54,10 +56,14 @@ inline Addr &Addr::setPort(uint16_t port) {
   addr_.sin_port = htons(port);
   return *this;
 }
+inline Addr &Addr::setFamily(int32_t family) {
+  addr_.sin_family = family;
+  return *this;
+}
 
 inline Addr::Addr(const std::string &addr) : Addr() {
   auto tokens = Strings::splitOf(addr, ':');
-  if (tokens.size() == 2) {
+  if (tokens.size() >= 2) {
     uint16_t port = StringStream(tokens[1]);
     addr_.sin_port = htons(port);
     addr_.sin_family = AF_INET;
@@ -65,13 +71,13 @@ inline Addr::Addr(const std::string &addr) : Addr() {
   }
 }
 
-inline Addr Addr::getLocal(int sock) {
+inline Addr Addr::local(int sock) {
   sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
   getsockname(sock, (sockaddr *)&addr, &addrlen);
   return Addr(addr);
 }
-inline Addr Addr::getPeer(int sock) {
+inline Addr Addr::peer(int sock) {
   sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
   getpeername(sock, (sockaddr *)&addr, &addrlen);
@@ -83,7 +89,11 @@ inline const sockaddr_in &Addr::addr() const { return addr_; }
 inline std::string Addr::inetNtop(const in_addr &addr, int32_t family) {
   static constexpr size_t bufflen = 128;
   auto buff = new_unique<char[]>(bufflen);
+#if defined(MYSPACE_WINDOWS)
+  return ::inet_ntop(family, (PVOID)&addr, buff.get(), bufflen);
+#else
   return ::inet_ntop(family, (const void *)&addr, buff.get(), bufflen);
+#endif
 }
 
 inline in_addr Addr::inetPton(const std::string &ip, int32_t family) {

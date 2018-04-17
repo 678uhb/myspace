@@ -33,6 +33,7 @@ public:
   template <class X> X peek() noexcept(false);
   template <class X> void recv(X &x) noexcept(false);
   template <class X> void peek(X &x) noexcept(false);
+  std::string recvUntil(const std::string &token) noexcept(false);
   // std::string like
   template <class X> X recv(size_t len) noexcept(false);
   template <class X> X peek(size_t len) noexcept(false);
@@ -70,6 +71,53 @@ private:
   std::string sendstr_;
 };
 
+namespace socketstreamimpl {
+
+template <class X> inline size_t getLen(size_t len) { return sizeof(X); }
+
+template <> inline size_t getLen<std::string>(size_t len) { return len; }
+
+template <class X>
+inline X &toX(X &x, size_t, bool no_reorder, const std::string &buffer) {
+  if (!no_reorder) {
+    x = Codec::ntoh(*(X *)buffer.c_str());
+  } else {
+    x = *(X *)buffer.c_str();
+  }
+  return x;
+}
+
+template <>
+inline std::string &toX<std::string>(std::string &x, size_t len, bool,
+                                     const std::string &buffer) {
+  x = buffer.substr(0, len);
+  return x;
+}
+
+template <>
+inline uint8_t &toX<uint8_t>(uint8_t &x, size_t len, bool,
+                             const std::string &buffer) {
+  x = buffer[0];
+  return x;
+}
+
+template <>
+inline int8_t &toX<int8_t>(int8_t &x, size_t len, bool,
+                           const std::string &buffer) {
+  x = buffer[0];
+  return x;
+}
+
+template <class X> inline std::string toString(const X &x) {
+  std::string result;
+  auto y = Codec::hton(x);
+  result.append((const char *)&y, sizeof(y));
+  return result;
+}
+
+inline const std::string &toString(const std::string &x) { return x; }
+} // namespace socketstreamimpl
+
 template <class SockType>
 inline SocketStream<SockType>::SocketStream(std::shared_ptr<SockType> sock)
     : sock_(sock) {}
@@ -81,10 +129,14 @@ inline SocketStream<SockType>::SocketStream(
     : use_timeout_(true), timeout_(timeout), sock_(sock) {}
 
 template <class SockType>
+inline SocketStream<SockType>::SocketStream(const Addr &addr)
+    : use_timeout_(false), sock_(new_shared<SockType>(addr)) {}
+
+template <class SockType>
 inline SocketStream<SockType>::SocketStream(
     const Addr &addr, std::chrono::high_resolution_clock::duration timeout)
-    : use_timeout_(true), timeout_(timeout), sock_(new_shared<SockType>(addr)) {
-}
+    : use_timeout_(true), timeout_(timeout),
+      sock_(new_shared<SockType>(addr, timeout)) {}
 
 template <class SockType>
 template <class X>
@@ -171,58 +223,27 @@ template <> inline void SocketStream<udp::Socket>::purchase(size_t want) {
   }
 }
 
-namespace socketstreamimpl {
-
-template <class X> inline size_t getLen(size_t len) { return sizeof(X); }
-
-template <> inline size_t getLen<std::string>(size_t len) { return len; }
-
-} // namespace socketstreamimpl
-
 template <class SockType>
 template <class X>
 inline size_t SocketStream<SockType>::getLen(size_t len) {
   return socketstreamimpl::getLen<X>(len);
 }
 
-namespace socketstreamimpl {
-template <class X>
-inline X &toX(X &x, size_t, bool no_reorder, const std::string &buffer) {
-  if (!no_reorder) {
-    x = Codec::ntoh(*(X *)buffer.c_str());
-  } else {
-    x = *(X *)buffer.c_str();
-  }
-  return x;
-}
-
-template <>
-inline std::string &toX<std::string>(std::string &x, size_t len, bool,
-                                     const std::string &buffer) {
-  x = buffer.substr(0, len);
-  return x;
-}
-
-template <>
-inline uint8_t &toX<uint8_t>(uint8_t &x, size_t len, bool,
-                             const std::string &buffer) {
-  x = buffer[0];
-  return x;
-}
-
-template <>
-inline int8_t &toX<int8_t>(int8_t &x, size_t len, bool,
-                           const std::string &buffer) {
-  x = buffer[0];
-  return x;
-}
-
-} // namespace socketstreamimpl
-
 template <class SockType>
 template <class X>
 inline X &SocketStream<SockType>::toX(X &x, size_t len) {
   return socketstreamimpl::toX(x, len, false, recvstr_);
+}
+
+template <class SockType>
+template <class X>
+inline void SocketStream<SockType>::send(const X &x) noexcept(false) {
+  if (!use_timeout_)
+    sock_->send(socketstreamimpl::toString(x));
+  else {
+    timeout_ -= Time::costs(
+        [&]() { sock_->send(socketstreamimpl::toString(x), timeout_); });
+  }
 }
 
 template <class SockType> inline void SocketStream<SockType>::flush() {
@@ -235,17 +256,6 @@ template <class SockType> inline void SocketStream<SockType>::flush() {
   }
   sendstr_.erase(0, sendn);
 }
-
-namespace socketstreamimpl {
-template <class X> inline std::string toString(const X &x) {
-  std::string result;
-  auto y = Codec::hton(x);
-  result.append((const char *)&y, sizeof(y));
-  return result;
-}
-
-inline const std::string &toString(const std::string &x) { return x; }
-} // namespace socketstreamimpl
 
 template <class SockType>
 template <class X>
@@ -268,6 +278,27 @@ template <class SockType> inline SocketStream<SockType>::~SocketStream() {
   } catch (...) {
     MYSPACE_DEV_EXCEPTION();
   }
+}
+
+template <class SockType>
+inline std::string
+SocketStream<SockType>::recvUntil(const std::string &token) noexcept(false) {
+  std::string tmp;
+  auto lesscount = Strings::endWithLess(recvstr_, token);
+  if (lesscount > 0) {
+    if (use_timeout_) {
+      timeout_ -= Time::costs([&]() {
+        recvstr_.append(sock_->recvUntil(
+            token.substr(token.size() - lesscount, lesscount), timeout_));
+      });
+    } else {
+      recvstr_.append(
+          sock_->recvUntil(token.substr(token.size() - lesscount, lesscount)));
+    }
+  }
+  MYSPACE_THROW_IF_EX(TimeOut, !Strings::endWith(recvstr_, token));
+  tmp.swap(recvstr_);
+  return tmp;
 }
 
 MYSPACE_END

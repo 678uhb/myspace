@@ -8,58 +8,26 @@ MYSPACE_BEGIN
 
 class Error {
 public:
-  static int lastError();
+  static std::error_code lastError();
 
-  static int lastNetError();
+  static std::string strerror(const std::error_code &ec);
 
-  static std::string strerror(int ec);
-
-  enum {
-#if defined(MYSPACE_WINDOWS)
-    WOULD_BLOCK = WSAEWOULDBLOCK,
-    // err_again = EAGAIN,
-    IN_PROGRESS = WSAEINPROGRESS,
-    INTERRUPTED = WSAEINTR,
-    ALREADY = WSAEALREADY,
-    ISCONN = WSAEISCONN,
-    MSGSIZE = WSAEMSGSIZE,
-#else
-    WOULD_BLOCK = EWOULDBLOCK,
-    // err_again	= EAGAIN,
-    IN_PROGRESS = EINPROGRESS,
-    INTERRUPTED = EINTR,
-    ALREADY = EALREADY,
-    ISCONN = EISCONN,
-    MSGSIZE = EMSGSIZE,
-#endif
-  };
+  static std::string strerror(int e);
 };
-inline int Error::lastError() {
+inline std::error_code Error::lastError() {
 #if defined(MYSPACE_WINDOWS)
-  return ::GetLastError();
+  return std::error_code(::GetLastError(), std::system_category());
 #else
-  return errno;
+  return std::error_code(errno, std::system_category());
 #endif
 }
-inline int Error::lastNetError() {
-#if defined(MYSPACE_WINDOWS)
-  return ::WSAGetLastError();
-#else
-  return errno;
-#endif
+
+inline std::string Error::strerror(const std::error_code &ec) {
+  return ec.message();
 }
-inline std::string Error::strerror(int ec) {
-#if defined(MYSPACE_WINDOWS)
-  LPVOID buf = nullptr;
-  MYSPACE_DEFER(::LocalFree(buf));
-  ::FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-                  nullptr, ec, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                  (LPTSTR)&buf, 0, nullptr);
-  return std::string((char *)buf);
-#else
-  auto buf = new_unique<char[]>(1024);
-  return std::string(::strerror_r(ec, buf.get(), 1024));
-#endif
+
+inline std::string Error::strerror(int e) {
+  return Error::strerror(std::error_code(e, std::system_category()));
 }
 
 MYSPACE_END

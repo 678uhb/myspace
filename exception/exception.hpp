@@ -2,6 +2,7 @@
 #pragma once
 
 #include "myspace/_/stdafx.hpp"
+#include "myspace/error/error.hpp"
 #include "myspace/path/path.hpp"
 #include "myspace/strings/sstream.hpp"
 #include "myspace/strings/strings.hpp"
@@ -56,7 +57,15 @@ inline Exception::Exception(const char *file, int line, Types &&... types)
 
 template <class... Types>
 inline void Exception::Throw(const char *file, int line, Types &&... types) {
-  Exception::Throw(Exception(file, line, std::forward<Types>(types)...));
+  auto ec = Error::lastError();
+  if (ec.value() == 0) {
+    Exception::Throw(Exception(file, line, std::forward<Types>(types)...));
+  } else {
+    auto desc = StringStream(ec.message(), " ", Path::basename(file), ":", line,
+                             " ", std::forward<Types>(types)...)
+                    .str();
+    Exception::Throw(std::system_error(ec, desc));
+  }
 }
 inline void Exception::Throw(const std::exception &e) {
   if (std::current_exception()) {
