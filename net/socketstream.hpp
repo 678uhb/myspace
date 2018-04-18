@@ -26,6 +26,10 @@ public:
   SocketStream(std::shared_ptr<SockType> sock,
                std::chrono::high_resolution_clock::duration timeout);
   ~SocketStream();
+
+  void setBigEndian();
+  void setLittleEndian();
+
   /** recv **/
   // integer like
   template <class X> SocketStream &operator>>(X &x) noexcept(false);
@@ -64,6 +68,7 @@ private:
   void purchase(size_t len);
 
 private:
+  bool big_endian_ = true;
   bool use_timeout_ = false;
   std::chrono::high_resolution_clock::duration timeout_;
   std::shared_ptr<SockType> sock_;
@@ -78,8 +83,8 @@ template <class X> inline size_t getLen(size_t len) { return sizeof(X); }
 template <> inline size_t getLen<std::string>(size_t len) { return len; }
 
 template <class X>
-inline X &toX(X &x, size_t, bool no_reorder, const std::string &buffer) {
-  if (!no_reorder) {
+inline X &toX(X &x, size_t, bool t_big_endian, const std::string &buffer) {
+  if (t_big_endian) {
     x = Codec::ntoh(*(X *)buffer.c_str());
   } else {
     x = *(X *)buffer.c_str();
@@ -108,15 +113,28 @@ inline int8_t &toX<int8_t>(int8_t &x, size_t len, bool,
   return x;
 }
 
-template <class X> inline std::string toString(const X &x) {
+template <class X> inline std::string toString(const X &x, bool t_big_endian) {
   std::string result;
-  auto y = Codec::hton(x);
-  result.append((const char *)&y, sizeof(y));
+  if (t_big_endian) {
+    auto y = Codec::hton(x);
+    result.append((const char *)&y, sizeof(y));
+  } else {
+    result.append((const char *)&x, sizeof(x));
+  }
   return result;
 }
 
-inline const std::string &toString(const std::string &x) { return x; }
+inline const std::string &toString(const std::string &x, bool) { return x; }
 } // namespace socketstreamimpl
+
+template <class SockType>
+inline void SocketStream<SockType>::setLittleEndian() {
+  big_endian_ = false;
+}
+
+template <class SockType> inline void SocketStream<SockType>::setBigEndian() {
+  big_endian_ = true;
+}
 
 template <class SockType>
 inline SocketStream<SockType>::SocketStream(std::shared_ptr<SockType> sock)
@@ -232,17 +250,18 @@ inline size_t SocketStream<SockType>::getLen(size_t len) {
 template <class SockType>
 template <class X>
 inline X &SocketStream<SockType>::toX(X &x, size_t len) {
-  return socketstreamimpl::toX(x, len, false, recvstr_);
+  return socketstreamimpl::toX(x, len, big_endian_, recvstr_);
 }
 
 template <class SockType>
 template <class X>
 inline void SocketStream<SockType>::send(const X &x) noexcept(false) {
   if (!use_timeout_)
-    sock_->send(socketstreamimpl::toString(x));
+    sock_->send(socketstreamimpl::toString(x, big_endian_));
   else {
-    timeout_ -= Time::costs(
-        [&]() { sock_->send(socketstreamimpl::toString(x), timeout_); });
+    timeout_ -= Time::costs([&]() {
+      sock_->send(socketstreamimpl::toString(x, big_endian_), timeout_);
+    });
   }
 }
 
@@ -260,7 +279,7 @@ template <class SockType> inline void SocketStream<SockType>::flush() {
 template <class SockType>
 template <class X>
 inline void SocketStream<SockType>::hold(const X &x) noexcept(false) {
-  sendstr_.append(socketstreamimpl::toString(x));
+  sendstr_.append(socketstreamimpl::toString(x, big_endian_));
 }
 
 template <class SockType>

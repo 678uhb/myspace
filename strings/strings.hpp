@@ -5,70 +5,112 @@
 
 MYSPACE_BEGIN
 
-namespace Strings {
+class Strings {
+public:
+  static std::string tolower(const std::string &src);
 
-inline std::string tolower(const std::string &src);
+  static std::string toupper(const std::string &src);
 
-inline std::string toupper(const std::string &src);
+  static bool isBlank(char c);
 
-inline bool isBlank(char c);
+  static std::string rStripOf(const std::string &src,
+                              const std::string &delme = "");
+  template <
+      class ToString,
+      typename std::enable_if<
+          std::is_constructible<std::string, ToString>::value, int>::type = 1>
+  static std::string rStripOf(const std::string &src,
+                              const ToString &delme = "");
 
-inline std::string rStripOf(const std::string &src,
-                            const std::string &delme = "");
-template <
-    class ToString,
-    typename std::enable_if<std::is_constructible<std::string, ToString>::value,
-                            int>::type = 1>
-inline std::string rStripOf(const std::string &src, const ToString &delme = "");
+  static std::string rStripOf(const std::string &src, char delme);
 
-inline std::string rStripOf(const std::string &src, char delme);
+  static std::string lStripOf(const std::string &src,
+                              const std::string &delme = "");
+  template <
+      class ToString,
+      typename std::enable_if<
+          std::is_constructible<std::string, ToString>::value, int>::type = 1>
+  static std::string lStripOf(const std::string &src,
+                              const ToString &delme = "");
 
-inline std::string lStripOf(const std::string &src,
-                            const std::string &delme = "");
-template <
-    class ToString,
-    typename std::enable_if<std::is_constructible<std::string, ToString>::value,
-                            int>::type = 1>
-inline std::string lStripOf(const std::string &src, const ToString &delme = "");
+  static std::string lStripOf(const std::string &src, char delme);
 
-inline std::string lStripOf(const std::string &src, char delme);
+  static std::string stripOf(const std::string &src,
+                             const std::string &delme = "");
+  template <
+      class ToString,
+      typename std::enable_if<
+          std::is_constructible<std::string, ToString>::value, int>::type = 1>
+  static std::string stripOf(const std::string &src,
+                             const ToString &delme = "");
 
-inline std::string stripOf(const std::string &src,
-                           const std::string &delme = "");
-template <
-    class ToString,
-    typename std::enable_if<std::is_constructible<std::string, ToString>::value,
-                            int>::type = 1>
-inline std::string stripOf(const std::string &src, const ToString &delme = "");
+  static std::string stripOf(const std::string &src, char delme);
 
-inline std::string stripOf(const std::string &src, char delme);
+  template <class ReturnType, class SourceType, class DelmeType>
+  static ReturnType splitOf(const SourceType &, const DelmeType &);
 
-template <class ReturnType, class SourceType, class DelmeType>
-inline ReturnType splitOf(const SourceType &, const DelmeType &);
+  template <class ReturnType, class SourceType, class X>
+  static ReturnType splitOf(const SourceType &, std::initializer_list<X> init);
 
-template <class ReturnType, class SourceType, class X>
-inline ReturnType splitOf(const SourceType &, std::initializer_list<X> init);
+  template <class ReturnType = std::deque<std::string>>
+  static ReturnType splitOf(const std::string &src, const std::string &delme);
 
-template <class ReturnType = std::deque<std::string>>
-inline ReturnType splitOf(const std::string &src, const std::string &delme);
+  template <class ReturnType = std::deque<std::string>>
+  static ReturnType splitOf(const std::string &src, const char &delme);
 
-template <class ReturnType = std::deque<std::string>>
-inline ReturnType splitOf(const std::string &src, const char &delme);
+  static std::deque<std::string> splitBy(const std::string &src,
+                                         const std::string &delimiter);
 
-inline std::deque<std::string> splitBy(const std::string &src,
-                                       const std::string &delimiter);
+  template <class Iteraterable>
+  static std::string join(const Iteraterable &x, const std::string &join_token);
 
-template <class Iteraterable>
-inline std::string join(const Iteraterable &x, const std::string &join_token);
+  template <class Iteraterable>
+  static std::string join(const Iteraterable &x, const char);
 
-template <class Iteraterable>
-inline std::string join(const Iteraterable &x, const char);
+  static bool startWith(const std::string &str, const std::string &token);
 
-inline bool startWith(const std::string &str, const std::string &token);
-inline bool endWith(const std::string &str, const std::string &token);
+  static bool startWithin(const std::string &str, const std::string &token);
 
-inline size_t endWithLess(const std::string &str, const std::string &token);
-}; // namespace Strings
+  static bool endWith(const std::string &str, const std::string &token);
+
+  static size_t endWithLess(const std::string &str, const std::string &token);
+
+  static std::string replace(const std::string &src, const std::string &from,
+                             const std::string &to);
+  static std::string deduplicate(const std::string &src, char c);
+};
+inline std::string Strings::deduplicate(const std::string &src, char r) {
+  std::string result;
+  for (auto &c : src) {
+    if (c != r) {
+      result.append(1, c);
+    } else if (result.empty() || result.back() != r) {
+      result.append(1, c);
+    }
+  }
+  return result;
+}
+inline std::string Strings::replace(const std::string &src,
+                                    const std::string &from,
+                                    const std::string &to) {
+  if (from == to || from.empty())
+    return src;
+
+  std::string result;
+
+  for (size_t pos = 0, lastpos = 0;;) {
+    pos = src.find(from, lastpos);
+    if (pos != src.npos) {
+      result.append(src.substr(lastpos, pos - lastpos));
+      result.append(to);
+      lastpos = pos + from.size();
+    } else {
+      result.append(src.substr(lastpos));
+      break;
+    }
+  }
+  return result;
+}
 
 inline std::string Strings::tolower(const std::string &src) {
   std::string result;
@@ -140,9 +182,13 @@ template <class ToString,
           typename std::enable_if<
               std::is_constructible<std::string, ToString>::value, int>::type>
 inline std::string Strings::lStripOf(const std::string &src,
-                                     const ToString &delme);
+                                     const ToString &delme) {
+  return lStripOf(src, std::string{delme});
+}
 
-inline std::string Strings::lStripOf(const std::string &src, char delme);
+inline std::string Strings::lStripOf(const std::string &src, char delme) {
+  return lStripOf(src, std::string{delme});
+}
 
 template <class ToString,
           typename std::enable_if<
@@ -223,7 +269,14 @@ template <class Iteraterable>
 inline std::string Strings::join(const Iteraterable &x, char join_token) {
   return Strings::join<Iteraterable>(x, std::string{join_token});
 }
-
+inline bool Strings::startWithin(const std::string &str,
+                                 const std::string &token) {
+  if (token.empty())
+    return true;
+  if (str.empty())
+    return false;
+  return token.find(str[0]) != token.npos;
+}
 inline bool Strings::startWith(const std::string &str,
                                const std::string &token) {
   if (token.empty())

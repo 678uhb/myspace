@@ -71,17 +71,40 @@ public:
   Json &operator=(Json &&);
 
   std::string dump() const;
+  std::string toString() const;
+  std::string to_json() const;
 
   // map like access
   Json &operator[](const std::string &);
+  const Json &operator[](const std::string &) const noexcept(false);
+  template <size_t N> Json &operator[](const char (&)[N]);
+  template <size_t N>
+  const Json &operator[](const char (&)[N]) const noexcept(false);
   // array like access
-  Json &operator[](size_t) throw(Json::RangeError, Json::TypeError);
+  Json &operator[](size_t) noexcept(false);
+  const Json &operator[](size_t) const noexcept(false);
   // access
   std::string &stringValue() noexcept(false);
   Array &arrayValue() noexcept(false);
   Object &objectValue() noexcept(false);
   double &numberValue() noexcept(false);
   bool &boolValue() noexcept(false);
+  const std::string &stringValue() const noexcept(false);
+  const Array &arrayValue() const noexcept(false);
+  const Object &objectValue() const noexcept(false);
+  const double &numberValue() const noexcept(false);
+  const bool &boolValue() const noexcept(false);
+  operator std::string &() noexcept(false);
+  operator double &() noexcept(false);
+  operator bool &() noexcept(false);
+  operator Json::Array &() noexcept(false);
+  operator Json::Object &() noexcept(false);
+  operator const std::string &() const noexcept(false);
+  operator const double &() const noexcept(false);
+  operator const bool &() const noexcept(false);
+  operator const Json::Array &() const noexcept(false);
+  operator const Json::Object &() const noexcept(false);
+
   // check type
   Json::Type type() const;
   bool isString() const;
@@ -97,6 +120,12 @@ public:
   bool operator<=(const Json &) const;
   bool operator>(const Json &) const;
   bool operator>=(const Json &) const;
+  template <class X> bool operator==(const X &) const;
+  template <class X> bool operator!=(const X &) const;
+  template <class X> bool operator<(const X &) const;
+  template <class X> bool operator<=(const X &) const;
+  template <class X> bool operator>(const X &) const;
+  template <class X> bool operator>=(const X &) const;
 
 private:
   std::shared_ptr<jsonimpl::JsonValue> value_;
@@ -620,6 +649,9 @@ inline std::string Json::dump() const {
   return std::string{};
 }
 
+inline std::string Json::toString() const { return dump(); }
+inline std::string Json::to_json() const { return dump(); }
+
 inline Json &Json::operator[](const std::string &key) {
   try {
     return value_->operator[](key);
@@ -628,8 +660,23 @@ inline Json &Json::operator[](const std::string &key) {
     return value_->operator[](key);
   }
 }
-inline Json &Json::operator[](size_t idx) throw(Json::RangeError,
-                                                Json::TypeError) {
+inline const Json &Json::operator[](const std::string &key) const
+    noexcept(false) {
+  return value_->operator[](key);
+}
+template <size_t N> inline Json &Json::operator[](const char (&cstr)[N]) {
+  return operator[](std::string(cstr, N));
+}
+template <size_t N>
+inline const Json &Json::operator[](const char (&cstr)[N]) const
+    noexcept(false) {
+  return operator[](std::string(cstr, N));
+}
+
+inline Json &Json::operator[](size_t idx) noexcept(false) {
+  return value_->operator[](idx);
+}
+inline const Json &Json::operator[](size_t idx) const noexcept(false) {
   return value_->operator[](idx);
 }
 inline std::string &Json::stringValue() noexcept(false) {
@@ -646,6 +693,41 @@ inline double &Json::numberValue() noexcept(false) {
 }
 inline bool &Json::boolValue() noexcept(false) { return value_->boolValue(); }
 
+inline const std::string &Json::stringValue() const noexcept(false) {
+  return value_->stringValue();
+}
+inline const Json::Array &Json::arrayValue() const noexcept(false) {
+  return value_->arrayValue();
+}
+inline const Json::Object &Json::objectValue() const noexcept(false) {
+  return value_->objectValue();
+}
+inline const double &Json::numberValue() const noexcept(false) {
+  return value_->numberValue();
+}
+inline const bool &Json::boolValue() const noexcept(false) {
+  return value_->boolValue();
+}
+inline Json::operator std::string &() noexcept(false) { return stringValue(); }
+inline Json::operator double &() noexcept(false) { return numberValue(); }
+inline Json::operator bool &() noexcept(false) { return boolValue(); }
+inline Json::operator Json::Array &() noexcept(false) { return arrayValue(); }
+inline Json::operator Json::Object &() noexcept(false) { return objectValue(); }
+inline Json::operator const std::string &() const noexcept(false) {
+  return stringValue();
+}
+inline Json::operator const double &() const noexcept(false) {
+  return numberValue();
+}
+inline Json::operator const bool &() const noexcept(false) {
+  return boolValue();
+}
+inline Json::operator const Json::Array &() const noexcept(false) {
+  return arrayValue();
+}
+inline Json::operator const Json::Object &() const noexcept(false) {
+  return objectValue();
+}
 inline Json::Type Json::type() const { return value_->type(); }
 inline bool Json::isString() const { return value_->isString(); }
 inline bool Json::isArray() const { return value_->isArray(); }
@@ -671,6 +753,24 @@ inline bool Json::operator>(const Json &x) const {
 }
 inline bool Json::operator>=(const Json &x) const {
   return value_->operator>=(x.value_.get());
+}
+template <class X> inline bool Json::operator==(const X &x) const {
+  return operator==(Json{x});
+}
+template <class X> inline bool Json::operator!=(const X &x) const {
+  return operator!=(Json{x});
+}
+template <class X> inline bool Json::operator<(const X &x) const {
+  return operator<(Json{x});
+}
+template <class X> inline bool Json::operator<=(const X &x) const {
+  return operator<=(Json{x});
+}
+template <class X> inline bool Json::operator>(const X &x) const {
+  return operator>(Json{x});
+}
+template <class X> inline bool Json::operator>=(const X &x) const {
+  return operator>=(Json{x});
 }
 
 inline Json Json::parse(const std::string &src) noexcept(false) {

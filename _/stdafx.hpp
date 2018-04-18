@@ -9,6 +9,7 @@
 #endif
 
 // system headers
+
 #if defined(MYSPACE_WINDOWS)
 
 #pragma warning(disable : 4290)
@@ -29,9 +30,9 @@
 #include <Objbase.h>
 #include <WS2tcpip.h>
 #include <WinSock2.h>
-//#include <Windns.h>
 #include <corecrt_io.h>
 #include <direct.h>
+#include <sys/stat.h>
 
 #include <Iphlpapi.h>
 
@@ -49,6 +50,7 @@
 #include <netinet/in.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <ucontext.h>
 #include <uuid/uuid.h>
@@ -66,6 +68,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
+
 //  cpp headers
 #include <algorithm>
 #include <atomic>
@@ -96,6 +99,10 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#define MYSPACE_BEGIN namespace myspace {
+#define MYSPACE_END }
+
 // using namespace std;
 // using namespace chrono;
 // using namespace this_thread;
@@ -120,8 +127,3 @@
 // #define MYSPACE_API
 
 // #endif
-
-#define MYSPACE_BEGIN namespace myspace {
-#define MYSPACE_END }
-
-#include "myspace/_/macro.hpp"

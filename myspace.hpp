@@ -22,6 +22,7 @@
 #include "myspace/net/tcp/accepter.hpp"
 #include "myspace/net/tcp/socket.hpp"
 #include "myspace/net/udp/socket.hpp"
+#include "myspace/os/os.hpp"
 #include "myspace/pool/pool.hpp"
 #include "myspace/process/process.hpp"
 #include "myspace/strings/sstream.hpp"
