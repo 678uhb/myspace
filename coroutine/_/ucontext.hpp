@@ -56,8 +56,6 @@ private:
 template <class Function, class... Arguments>
 inline Ucontext::Ucontext(Function &&func, Arguments &&... args)
     : stack_buffer_(new char[8196]) {
-  MYSPACE_DEV("Ucontext()");
-
   MYSPACE_THROW_IF(::getcontext(callee_.get()) < 0);
 
   callee_->uc_stack.ss_sp = stack_buffer_.get();
@@ -74,10 +72,8 @@ inline Ucontext::Ucontext(Function &&func, Arguments &&... args)
 
   func_ = [f](Ucontext &x) { f(x); };
 
-  MYSPACE_DEV("Ucontext()!!");
 }
 inline Ucontext::~Ucontext() {
-  MYSPACE_DEV("~Ucontext()");
 
   caller_is_quit_ = true;
 
@@ -85,10 +81,8 @@ inline Ucontext::~Ucontext() {
     resume();
   }
 
-  MYSPACE_DEV("~Ucontext()!!");
 }
 inline Ucontext::Ucontext(Ucontext &&u) {
-  MYSPACE_DEV("Ucontext(Ucontext&& u)");
 
   swap(std::move(u));
 }

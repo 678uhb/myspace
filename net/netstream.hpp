@@ -33,17 +33,17 @@ public:
   template <class X> NetStream &operator<<(const X &x);
 
   // popFront
-  NetStream &operator>>(uint8_t &) throw(Insufficient);
-  NetStream &operator>>(uint16_t &) throw(Insufficient);
-  NetStream &operator>>(uint32_t &) throw(Insufficient);
-  NetStream &popFront(std::string &, size_t) throw(Insufficient);
-  NetStream &popFront(uint16_t &, bool reverse = true) throw(Insufficient);
+  NetStream &operator>>(uint8_t &) noexcept(false);
+  NetStream &operator>>(uint16_t &) noexcept(false);
+  NetStream &operator>>(uint32_t &) noexcept(false);
+  NetStream &popFront(std::string &, size_t) noexcept(false);
+  NetStream &popFront(uint16_t &, bool reverse = true) noexcept(false);
 
-  template <class X> X popFront() throw(Insufficient);
-  template <class X> X popFront(size_t) throw(Insufficient);
-  template <class X> X front() const throw(Insufficient);
-  void front(uint8_t &) const throw(Insufficient);
-  void front(uint16_t &) const throw(Insufficient);
+  template <class X> X popFront() noexcept(false);
+  template <class X> X popFront(size_t) noexcept(false);
+  template <class X> X front() const noexcept(false);
+  void front(uint8_t &) const noexcept(false);
+  void front(uint16_t &) const noexcept(false);
 
 private:
   std::string packed_;
@@ -90,35 +90,35 @@ inline std::string NetStream::get() {
 inline const std::string &NetStream::peek() const { return packed_; }
 
 inline NetStream &NetStream::
-operator>>(uint8_t &x) throw(NetStream::Insufficient) {
+operator>>(uint8_t &x) noexcept(false) {
   MYSPACE_THROW_IF_EX(NetStream::Insufficient, packed_.empty());
   x = packed_.front();
   packed_.erase(0, 1);
   return *this;
 }
 inline NetStream &NetStream::
-operator>>(uint16_t &x) throw(NetStream::Insufficient) {
+operator>>(uint16_t &x) noexcept(false) {
   MYSPACE_THROW_IF_EX(NetStream::Insufficient, packed_.size() < 2);
   x = Codec::ntoh(*(uint16_t *)(packed_.c_str()));
   packed_.erase(0, 2);
   return *this;
 }
 inline NetStream &NetStream::
-operator>>(uint32_t &x) throw(NetStream::Insufficient) {
+operator>>(uint32_t &x) noexcept(false) {
   MYSPACE_THROW_IF_EX(NetStream::Insufficient, packed_.size() < sizeof(x));
   x = Codec::ntoh(*(uint32_t *)(packed_.c_str()));
   packed_.erase(0, 4);
   return *this;
 }
 inline NetStream &
-NetStream::popFront(std::string &x, size_t len) throw(NetStream::Insufficient) {
+NetStream::popFront(std::string &x, size_t len) noexcept(false) {
   MYSPACE_THROW_IF_EX(NetStream::Insufficient, packed_.size() < len);
   x = packed_.substr(0, len);
   packed_.erase(0, len);
   return *this;
 }
 inline NetStream &
-NetStream::popFront(uint16_t &x, bool reverse) throw(NetStream::Insufficient) {
+NetStream::popFront(uint16_t &x, bool reverse) noexcept(false) {
   if (reverse) {
     return operator>>(x);
   }
@@ -128,19 +128,19 @@ NetStream::popFront(uint16_t &x, bool reverse) throw(NetStream::Insufficient) {
   return *this;
 }
 
-inline void NetStream::front(uint8_t &x) const throw(Insufficient) {
+inline void NetStream::front(uint8_t &x) const noexcept(false) {
   MYSPACE_THROW_IF_EX(NetStream::Insufficient, packed_.empty());
   x = (uint8_t)packed_[0];
 }
 
-inline void NetStream::front(uint16_t &x) const throw(NetStream::Insufficient) {
+inline void NetStream::front(uint16_t &x) const noexcept(false) {
   MYSPACE_THROW_IF_EX(NetStream::Insufficient, packed_.size() < sizeof(x));
   x = Codec::ntoh(*(uint16_t *)packed_.c_str());
 }
 
 template <>
 inline uint8_t NetStream::front<uint8_t>() const
-    throw(NetStream::Insufficient) {
+    noexcept(false) {
   uint8_t x;
   this->front(x);
   return x;
@@ -148,21 +148,21 @@ inline uint8_t NetStream::front<uint8_t>() const
 
 template <>
 inline uint16_t NetStream::front<uint16_t>() const
-    throw(NetStream::Insufficient) {
+    noexcept(false) {
   uint16_t x;
   this->front(x);
   return x;
 }
 
 template <>
-inline uint8_t NetStream::popFront<uint8_t>() throw(NetStream::Insufficient) {
+inline uint8_t NetStream::popFront<uint8_t>() noexcept(false) {
   MYSPACE_THROW_IF_EX(NetStream::Insufficient, packed_.empty());
   MYSPACE_DEFER(packed_.erase(0, 1));
   return (uint8_t)packed_[0];
 }
 
 template <>
-inline uint16_t NetStream::popFront<uint16_t>() throw(NetStream::Insufficient) {
+inline uint16_t NetStream::popFront<uint16_t>() noexcept(false) {
   uint16_t x;
   popFront(x, true);
   return x;
@@ -170,7 +170,7 @@ inline uint16_t NetStream::popFront<uint16_t>() throw(NetStream::Insufficient) {
 
 template <>
 inline std::string
-NetStream::popFront<std::string>(size_t len) throw(NetStream::Insufficient) {
+NetStream::popFront<std::string>(size_t len) noexcept(false) {
   MYSPACE_THROW_IF_EX(NetStream::Insufficient, packed_.size() < len);
   MYSPACE_DEFER(packed_.erase(0, len));
   return packed_.substr(0, len);

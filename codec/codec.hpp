@@ -132,7 +132,6 @@ inline std::string Codec::decodeBase64(const std::string &src) {
       break;
     }
     a4[i] = base64decode_[(size_t)c];
-    // MYSPACE_DEV("c = %s, a4[i] = %s", (int)c, (int)a4[i]);
     if (a4[i] == (uint8_t)'\xff') {
       break;
     }
@@ -145,9 +144,7 @@ inline std::string Codec::decodeBase64(const std::string &src) {
       }
     }
   }
-  // MYSPACE_DEV("i = ", i);
   if (i == 2) {
-    // MYSPACE_DEV(" a4[0] = %s, a4[1] = %s", (size_t)a4[0], (size_t)a4[1]);
     result.append(1, (a4[0] << 2) | (a4[1] >> 4));
   } else if (i == 3) {
     result.append(1, (a4[0] << 2) | (a4[1] >> 4));
@@ -198,8 +195,6 @@ inline std::string toMultiByte(uint32_t codepage, const std::wstring &src) {
                                  dstbuffer.get(), dstlen, nullptr, nullptr);
   if (n <= 0)
     return std::string();
-  // MYSPACE_DEV(" to multi bytes result %s",std::string(dstbuffer.get(),
-  // std::min(n, dstlen)));
   return std::string(dstbuffer.get(), std::min(n, dstlen));
 }
 
@@ -222,14 +217,12 @@ inline std::string Iconv::convert(const std::string &src) {
   size_t srcleft = src.size();
   const size_t dstlen = std::max(size_t(128), std::min(size_t(1024), srcleft));
   auto dst = new_unique<char[]>(dstlen);
-  // MYSPACE_DEV(" begin srclen = %s, dstlen = %s", srcleft, dstlen);
   std::string result;
   while (srcleft > 0) {
     char *pdst = dst.get();
     size_t dstleft = dstlen;
     size_t n = iconv(iconv_, &psrc, &srcleft, &pdst, &dstleft);
     if (n == size_t(-1)) {
-      //  MYSPACE_DEV(" errno = %s, srcleft = %s, dstleft = %s", errno,
       //  srcleft,dstleft);
       if (errno == EILSEQ || errno == EINVAL) {
         break;
@@ -237,11 +230,9 @@ inline std::string Iconv::convert(const std::string &src) {
         result.append(dst.get(), dstlen - dstleft);
       }
     } else {
-      // MYSPACE_DEV(" iconv n = %s", n);
       result.append(dst.get(), dstlen - dstleft);
     }
   }
-  // MYSPACE_DEV("result = %s, length = %s", result, result.size());
   return result;
 }
 

@@ -3,8 +3,7 @@
 
 MYSPACE_BEGIN
 
-template <class X, class Creator, class Deleter>
-class Pool;
+template <class X, class Creator, class Deleter> class Pool;
 
 class PoolFactory {
   template <class X> class DefaultCreator {
@@ -29,7 +28,6 @@ public:
   static auto create(size_t max_count, Creator &&creator, Deleter &&deleter)
       -> std::shared_ptr<Pool<X, Creator, Deleter>>;
 };
-
 
 template <class X, class Creator, class Deleter>
 class Pool : public std::enable_shared_from_this<Pool<X, Creator, Deleter>> {
@@ -62,21 +60,19 @@ private:
   friend class PoolFactory;
 };
 
-
 template <class X, class C, class D>
 inline std::unique_ptr<X, std::function<void(X *)>> Pool<X, C, D>::getUnique() {
+  auto pool = shared_from_this();
   std::unique_ptr<X, std::function<void(X *)>> up(
-      _getAvaible().release(),
-      [pool = shared_from_this()](X *px) { pool->put(px); });
-
+      _getAvaible().release(), [pool](X *px) { pool->put(px); });
   return std::move(up);
 }
 
 template <class X, class C, class D>
 inline std::shared_ptr<X> Pool<X, C, D>::getShared() {
+  auto pool = shared_from_this();
   std::shared_ptr<X> sp(_getAvaible().release(),
-                        [pool = shared_from_this()](X *px) { pool->put(px); });
-
+                        [pool](X *px) { pool->put(px); });
   return std::move(sp);
 }
 

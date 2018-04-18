@@ -161,7 +161,7 @@ public:
              std::chrono::high_resolution_clock::duration timeout)
       : stream_(addr, timeout) {}
 
-  Compressor &compress(const Message &m) throw(CompressError) {
+  Compressor &compress(const Message &m) noexcept(false) {
     try {
       stream_.hold(m.header_.id_);
       stream_.hold(m.header_.flags_);
@@ -205,7 +205,7 @@ public:
     return *this;
   }
 
-  Message extract() throw(ExtractError) {
+  Message extract() noexcept(false) {
     try {
 
       Message dst;

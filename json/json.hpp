@@ -24,7 +24,7 @@ public:
   typedef std::deque<Json> Array;
 
 public:
-  static Json parse(const std::string &src) throw(Json::ParseError);
+  static Json parse(const std::string &src) noexcept(false);
   // Implicit constructor: map-like objects (std::map, std::unordered_map,
   // etc)
   template <
@@ -35,8 +35,8 @@ public:
               std::is_constructible<
                   Json, decltype(std::declval<M>().begin()->second)>::value,
           int>::type = 0>
-  Json(const M &m)  : Json(Object(m.begin(), m.end())) {}
-  Json(std::initializer_list<std::pair<std::string, Json>> init) ;
+  Json(const M &m) : Json(Object(m.begin(), m.end())) {}
+  Json(std::initializer_list<std::pair<std::string, Json>> init);
 
   // Implicit constructor: vector-like objects (std::list, std::vector,
   // std::set, etc)
@@ -44,59 +44,59 @@ public:
                          std::is_constructible<
                              Json, decltype(*std::declval<V>().begin())>::value,
                          int>::type = 0>
-  Json(const V &v)  : Json(Array(v.begin(), v.end())) {}
-  Json() ;
-  Json(const Array &) ;
-  Json(Array &&) ;
-  Json(const Object &) ;
-  Json(Object &&) ;
-  Json(bool) ;
-  Json(double) ;
-  Json(float) ;
-  Json(int16_t) ;
-  Json(uint16_t) ;
-  Json(int32_t) ;
-  Json(uint32_t) ;
-  Json(int64_t) ;
-  Json(uint64_t) ;
-  Json(const std::string &) ;
-  Json(std::string &&) ;
-  Json(const char *) ;
-  Json(Json &&) ;
-  Json(const Json &) ;
-  void swap(Json &) ;
-  void copy(const Json &) ;
-  void share(Json &) ;
-  Json &operator=(const Json &) ;
-  Json &operator=(Json &&) ;
+  Json(const V &v) : Json(Array(v.begin(), v.end())) {}
+  Json();
+  Json(const Array &);
+  Json(Array &&);
+  Json(const Object &);
+  Json(Object &&);
+  Json(bool);
+  Json(double);
+  Json(float);
+  Json(int16_t);
+  Json(uint16_t);
+  Json(int32_t);
+  Json(uint32_t);
+  Json(int64_t);
+  Json(uint64_t);
+  Json(const std::string &);
+  Json(std::string &&);
+  Json(const char *);
+  Json(Json &&);
+  Json(const Json &);
+  void swap(Json &);
+  void copy(const Json &);
+  void share(Json &);
+  Json &operator=(const Json &);
+  Json &operator=(Json &&);
 
-  std::string dump() const ;
+  std::string dump() const;
 
   // map like access
-  Json &operator[](const std::string &) ;
+  Json &operator[](const std::string &);
   // array like access
   Json &operator[](size_t) throw(Json::RangeError, Json::TypeError);
   // access
-  std::string &stringValue() throw(Json::TypeError);
-  Array &arrayValue() throw(Json::TypeError);
-  Object &objectValue() throw(Json::TypeError);
-  double &numberValue() throw(Json::TypeError);
-  bool &boolValue() throw(Json::TypeError);
+  std::string &stringValue() noexcept(false);
+  Array &arrayValue() noexcept(false);
+  Object &objectValue() noexcept(false);
+  double &numberValue() noexcept(false);
+  bool &boolValue() noexcept(false);
   // check type
-  Json::Type type() const ;
-  bool isString() const ;
-  bool isArray() const ;
-  bool isObject() const ;
-  bool isNull() const ;
-  bool isNumber() const ;
-  bool isBool() const ;
+  Json::Type type() const;
+  bool isString() const;
+  bool isArray() const;
+  bool isObject() const;
+  bool isNull() const;
+  bool isNumber() const;
+  bool isBool() const;
 
-  bool operator==(const Json &) const ;
-  bool operator!=(const Json &) const ;
-  bool operator<(const Json &) const ;
-  bool operator<=(const Json &) const ;
-  bool operator>(const Json &) const ;
-  bool operator>=(const Json &) const ;
+  bool operator==(const Json &) const;
+  bool operator!=(const Json &) const;
+  bool operator<(const Json &) const;
+  bool operator<=(const Json &) const;
+  bool operator>(const Json &) const;
+  bool operator>=(const Json &) const;
 
 private:
   std::shared_ptr<jsonimpl::JsonValue> value_;
@@ -198,7 +198,7 @@ public:
   }
   Json::Type type() const override { return Json::NUL; }
   bool isNull() const override { return true; }
-  bool operator==(const JsonValue *x) const  override {
+  bool operator==(const JsonValue *x) const override {
     return x->type() == type();
   }
   bool operator!=(const JsonValue *x) const override {
@@ -268,7 +268,7 @@ public:
   Json::Type type() const override { return Json::ARR; }
   bool isArray() const override { return true; }
   Json::Array &arrayValue() override { return value_; };
-  Json &operator[](size_t idx) throw(Json::RangeError) override {
+  Json &operator[](size_t idx) noexcept(false) override {
     if (idx < value_.size())
       return value_[idx];
     MYSPACE_THROW_EX(Json::RangeError);
@@ -324,8 +324,8 @@ class JsonParser {
 public:
   MYSPACE_EXCEPTION_DEFINE(Exception, myspace::Exception)
 public:
-  JsonParser(const std::string &src)  : src_(src){};
-  Json parse() throw(JsonParser::Exception) {
+  JsonParser(const std::string &src) : src_(src){};
+  Json parse() noexcept(false) {
     try {
       return onValue(peek());
     } catch (...) {
@@ -335,7 +335,7 @@ public:
   }
 
 private:
-  Json onValue(char c) throw(JsonParser::Exception) {
+  Json onValue(char c) noexcept(false) {
     switch (c) {
     case 't':
     case 'T':
@@ -371,7 +371,7 @@ private:
     return Json{}; // not reached
   }
 
-  Json onArray() throw(JsonParser::Exception) {
+  Json onArray() noexcept(false) {
     try {
       assert_get('[');
       Json::Array arr;
@@ -391,7 +391,7 @@ private:
     }
     return Json{};
   }
-  Json onObject() throw(JsonParser::Exception) {
+  Json onObject() noexcept(false) {
     try {
       skipWhite();
       assert_get('{');
@@ -557,43 +557,40 @@ private:
 
 } // namespace jsonimpl
 
-inline Json::Json(
-    std::initializer_list<std::pair<std::string, Json>> init) 
+inline Json::Json(std::initializer_list<std::pair<std::string, Json>> init)
     : Json(Json::Object(init.begin(), init.end())) {}
-inline Json::Json()  : value_(new_shared<jsonimpl::JsonNull>()) {}
-inline Json::Json(Json &&x)  { swap(x); }
-inline Json::Json(const Json::Object &x) 
+inline Json::Json() : value_(new_shared<jsonimpl::JsonNull>()) {}
+inline Json::Json(Json &&x) { swap(x); }
+inline Json::Json(const Json::Object &x)
     : value_(new_shared<jsonimpl::JsonObject>(x)) {}
-inline Json::Json(Json::Object &&x) 
+inline Json::Json(Json::Object &&x)
     : value_(new_shared<jsonimpl::JsonObject>(std::move(x))) {}
-inline Json::Json(const Json::Array &x) 
+inline Json::Json(const Json::Array &x)
     : value_(new_shared<jsonimpl::JsonArray>(x)) {}
-inline Json::Json(Json::Array &&x) 
+inline Json::Json(Json::Array &&x)
     : value_(new_shared<jsonimpl::JsonArray>(std::move(x))) {}
-inline Json::Json(bool x) 
-    : value_(new_shared<jsonimpl::JsonBool>(x)) {}
-inline Json::Json(const std::string &x) 
+inline Json::Json(bool x) : value_(new_shared<jsonimpl::JsonBool>(x)) {}
+inline Json::Json(const std::string &x)
     : value_(new_shared<jsonimpl::JsonString>(x)) {}
-inline Json::Json(std::string &&x) 
+inline Json::Json(std::string &&x)
     : value_(new_shared<jsonimpl::JsonString>(std::move(x))) {}
-inline Json::Json(const char *x) 
+inline Json::Json(const char *x)
     : value_(new_shared<jsonimpl::JsonString>(x)){};
-inline Json::Json(double x) 
-    : value_(new_shared<jsonimpl::JsonNumber>(x)) {}
-inline Json::Json(float x)  : Json((double)x) {}
-inline Json::Json(int32_t x)  : Json((double)x) {}
-inline Json::Json(uint32_t x)  : Json((double)x) {}
-inline Json::Json(int16_t x)  : Json((double)x) {}
-inline Json::Json(uint16_t x)  : Json((double)x) {}
-inline Json::Json(int64_t x)  : Json((double)x) {}
-inline Json::Json(uint64_t x)  : Json((double)x) {}
-inline Json::Json(const Json &x)  { copy(x); }
-inline void Json::swap(Json &j)  {
+inline Json::Json(double x) : value_(new_shared<jsonimpl::JsonNumber>(x)) {}
+inline Json::Json(float x) : Json((double)x) {}
+inline Json::Json(int32_t x) : Json((double)x) {}
+inline Json::Json(uint32_t x) : Json((double)x) {}
+inline Json::Json(int16_t x) : Json((double)x) {}
+inline Json::Json(uint16_t x) : Json((double)x) {}
+inline Json::Json(int64_t x) : Json((double)x) {}
+inline Json::Json(uint64_t x) : Json((double)x) {}
+inline Json::Json(const Json &x) { copy(x); }
+inline void Json::swap(Json &j) {
   if (value_ != j.value_) {
     value_.swap(j.value_);
   }
 }
-inline void Json::copy(const Json &x)  {
+inline void Json::copy(const Json &x) {
   if (value_ != x.value_) {
     if (!x.value_)
       value_.reset();
@@ -601,20 +598,20 @@ inline void Json::copy(const Json &x)  {
       value_ = x.value_->clone();
   }
 }
-inline void Json::share(Json &x)  {
+inline void Json::share(Json &x) {
   if (value_ != x.value_)
     value_ = x.value_;
 }
-inline Json &Json::operator=(const Json &x)  {
+inline Json &Json::operator=(const Json &x) {
   copy(x);
   return *this;
 }
-inline Json &Json::operator=(Json &&x)  {
+inline Json &Json::operator=(Json &&x) {
   swap(x);
   return *this;
 }
 
-inline std::string Json::dump() const  {
+inline std::string Json::dump() const {
   try {
     return value_->dump();
   } catch (...) {
@@ -623,7 +620,7 @@ inline std::string Json::dump() const  {
   return std::string{};
 }
 
-inline Json &Json::operator[](const std::string &key)  {
+inline Json &Json::operator[](const std::string &key) {
   try {
     return value_->operator[](key);
   } catch (...) {
@@ -635,50 +632,48 @@ inline Json &Json::operator[](size_t idx) throw(Json::RangeError,
                                                 Json::TypeError) {
   return value_->operator[](idx);
 }
-inline std::string &Json::stringValue() throw(Json::TypeError) {
+inline std::string &Json::stringValue() noexcept(false) {
   return value_->stringValue();
 }
-inline Json::Array &Json::arrayValue() throw(Json::TypeError) {
+inline Json::Array &Json::arrayValue() noexcept(false) {
   return value_->arrayValue();
 }
-inline Json::Object &Json::objectValue() throw(Json::TypeError) {
+inline Json::Object &Json::objectValue() noexcept(false) {
   return value_->objectValue();
 }
-inline double &Json::numberValue() throw(Json::TypeError) {
+inline double &Json::numberValue() noexcept(false) {
   return value_->numberValue();
 }
-inline bool &Json::boolValue() throw(Json::TypeError) {
-  return value_->boolValue();
-}
+inline bool &Json::boolValue() noexcept(false) { return value_->boolValue(); }
 
-inline Json::Type Json::type() const  { return value_->type(); }
-inline bool Json::isString() const  { return value_->isString(); }
-inline bool Json::isArray() const  { return value_->isArray(); }
-inline bool Json::isObject() const   { return value_->isObject(); }
-inline bool Json::isNumber() const   { return value_->isNumber(); }
-inline bool Json::isBool() const   { return value_->isBool(); }
-inline bool Json::isNull() const   { return value_->isNull(); }
+inline Json::Type Json::type() const { return value_->type(); }
+inline bool Json::isString() const { return value_->isString(); }
+inline bool Json::isArray() const { return value_->isArray(); }
+inline bool Json::isObject() const { return value_->isObject(); }
+inline bool Json::isNumber() const { return value_->isNumber(); }
+inline bool Json::isBool() const { return value_->isBool(); }
+inline bool Json::isNull() const { return value_->isNull(); }
 
-inline bool Json::operator==(const Json &x) const  {
+inline bool Json::operator==(const Json &x) const {
   return value_->operator==(x.value_.get());
 }
-inline bool Json::operator!=(const Json &x) const  {
+inline bool Json::operator!=(const Json &x) const {
   return value_->operator!=(x.value_.get());
 }
-inline bool Json::operator<(const Json &x) const  {
+inline bool Json::operator<(const Json &x) const {
   return value_->operator<(x.value_.get());
 }
-inline bool Json::operator<=(const Json &x) const  {
+inline bool Json::operator<=(const Json &x) const {
   return value_->operator<=(x.value_.get());
 }
-inline bool Json::operator>(const Json &x) const  {
+inline bool Json::operator>(const Json &x) const {
   return value_->operator>(x.value_.get());
 }
-inline bool Json::operator>=(const Json &x) const  {
+inline bool Json::operator>=(const Json &x) const {
   return value_->operator>=(x.value_.get());
 }
 
-inline Json Json::parse(const std::string &src) throw(Json::ParseError) {
+inline Json Json::parse(const std::string &src) noexcept(false) {
   try {
     return jsonimpl::JsonParser(src).parse();
   } catch (...) {

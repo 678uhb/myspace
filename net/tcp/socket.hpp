@@ -216,6 +216,7 @@ inline std::string Socket::recv(
         sel->wait(timeout - (this_time - begin_time));
         continue;
       }
+      MYSPACE_DEV("throw here");
       MYSPACE_THROW_IF_EX(SocketError, recvn == 0);
       break;
     }

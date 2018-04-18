@@ -20,17 +20,16 @@ public:
 public:
   std::deque<Addr> query(const std::string &domain_name,
                          std::chrono::high_resolution_clock::duration timeout =
-                             std::chrono::seconds(3)) throw(NotFound, TimeOut);
+                             std::chrono::seconds(3)) noexcept(false);
 
   std::deque<Addr> query(const Addr &server, const std::string &domain_name,
                          std::chrono::high_resolution_clock::duration timeout =
-                             std::chrono::seconds(3)) throw(NotFound, TimeOut);
+                             std::chrono::seconds(3)) noexcept(false);
 };
 
-inline std::deque<Addr>
-Resolver::query(const std::string &domain_name,
-                std::chrono::high_resolution_clock::duration
-                    timeout) throw(Resolver::NotFound, Resolver::TimeOut) {
+inline std::deque<Addr> Resolver::query(
+    const std::string &domain_name,
+    std::chrono::high_resolution_clock::duration timeout) noexcept(false) {
   try {
     auto serveraddr = dnsimpl::systemDnsList();
     MYSPACE_THROW_IF(serveraddr.empty());
@@ -42,10 +41,9 @@ Resolver::query(const std::string &domain_name,
   return std::deque<Addr>{}; // not reached;
 }
 
-inline std::deque<Addr>
-Resolver::query(const Addr &server, const std::string &domain_name,
-                std::chrono::high_resolution_clock::duration
-                    timeout) throw(Resolver::NotFound, Resolver::TimeOut) {
+inline std::deque<Addr> Resolver::query(
+    const Addr &server, const std::string &domain_name,
+    std::chrono::high_resolution_clock::duration timeout) noexcept(false) {
   try {
     std::deque<Addr> result{};
     dnsimpl::Message req;

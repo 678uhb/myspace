@@ -51,21 +51,17 @@ private:
 
 template <class... Types>
 inline Exception::Exception(const char *file, int line, Types &&... types)
-    : std::runtime_error(StringStream(Path::basename(file), ":", line, " ",
-                                      std::forward<Types>(types)...)
-                             .str()) {}
+    : std::runtime_error(
+          StringStream(Path::basename(file), ":", line,
+                       (Error::lastError().value() == 0
+                            ? " "
+                            : " " + Error::strerror(Error::lastError()) + " "),
+                       std::forward<Types>(types)...)
+              .str()) {}
 
 template <class... Types>
 inline void Exception::Throw(const char *file, int line, Types &&... types) {
-  auto ec = Error::lastError();
-  if (ec.value() == 0) {
-    Exception::Throw(Exception(file, line, std::forward<Types>(types)...));
-  } else {
-    auto desc = StringStream(ec.message(), " ", Path::basename(file), ":", line,
-                             " ", std::forward<Types>(types)...)
-                    .str();
-    Exception::Throw(std::system_error(ec, desc));
-  }
+  Exception::Throw(Exception(file, line, std::forward<Types>(types)...));
 }
 inline void Exception::Throw(const std::exception &e) {
   if (std::current_exception()) {
