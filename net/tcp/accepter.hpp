@@ -27,7 +27,7 @@ public:
   operator int() const;
 
 private:
-  int sock_ = tcp::Socket();
+  int sock_ = -1;
 };
 
 inline Acceptor::Acceptor() {}

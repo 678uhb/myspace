@@ -10,6 +10,9 @@ public:
   MYSPACE_EXCEPTION_DEFINE(ConnectError, SocketError)
   MYSPACE_EXCEPTION_DEFINE(Timeout, SocketError)
 
+  Socketbase(const Socketbase &) = delete;
+  Socketbase &operator=(const Socketbase &) = delete;
+
   ~Socketbase();
 
   int getFd() const;
@@ -32,14 +35,14 @@ public:
   connect(const Addr &addr,
           std::chrono::high_resolution_clock::duration timeout) noexcept(false);
 
+  void close();
+
   static void close(int sock);
 
 protected:
   Socketbase(int family, int type, int protocal);
 
   int getSockError();
-
-  void close();
 
 protected:
   int sock_ = -1;
