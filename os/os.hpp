@@ -72,7 +72,7 @@ inline bool OS::isfile(const std::string path) {
 
 inline void OS::makedir(const std::string &path) noexcept(false) {
 #if defined(MYSPACE_LINUX)
-  MYSPACE_THROW_IF_EX(OSError, 0 != ::mkdir(path.c_str()), " ", path);
+  MYSPACE_THROW_IF_EX(OSError, 0 != ::mkdir(path.c_str(), 0777), " ", path);
 #endif
 #if defined(MYSPACE_WINDOWS)
   MYSPACE_THROW_IF_EX(OSError, 0 != ::_mkdir(path.c_str()), " ", path);

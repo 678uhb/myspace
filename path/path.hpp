@@ -68,7 +68,7 @@ inline std::string Path::join(const Arguments &... args) {
 
 template <class... Arguments>
 inline std::string Path::join(Arguments &&... args) {
-  return joinCheck(joinImpl(forward<Arguments>(args)...));
+  return joinCheck(joinImpl(std::forward<Arguments>(args)...));
 }
 
 template <class... Arguments>
@@ -78,9 +78,9 @@ inline std::string Path::joinImpl(const std::string &left,
   return joinImpl(left + '/' + right, rest...);
 }
 template <class... Arguments>
-static std::string Path::joinImpl(std::string &&left, std::string &&right,
+inline std::string Path::joinImpl(std::string &&left, std::string &&right,
                                   Arguments &&... rest) {
-  return joinImpl(left + '/' + right, rest...);
+  return joinImpl(left + '/' + right, std::forward<Arguments>(rest)...);
 }
 
 inline std::string Path::joinCheck(const std::string &path) {

@@ -22,7 +22,7 @@ public:
   // these function may throw exception, due to use defined creater/deleter
   // deleter may not to throw exception
   // c type HANDLE(void*) , better to set X to void, which return value is
-  // shared_ptr<void>, to void trouble
+  // std::shared_ptr<void>, to void trouble
   // all the impliments like std::condition_variable
   //
   std::shared_ptr<X> tryGet();
@@ -74,21 +74,21 @@ inline std::shared_ptr<X> Pool<X, C, D>::tryGetUnlocked() {
     if (x) {
       occupied_++;
       auto pool = shared_from_this();
-      return std::shared_ptr<X> sp(x, [pool](X *x) { pool->put(x); });
+      return std::shared_ptr<X>(x, [pool](X *x) { pool->put(x); });
     }
   }
   return nullptr;
 }
 
 template <class X, class C, class D>
-inline typename shared_ptr<X> Pool<X, C, D>::tryGet() {
+inline typename std::shared_ptr<X> Pool<X, C, D>::tryGet() {
   auto ul = std::unique_lock<std::mutex>(mtx_);
   return tryGetUnlocked();
 }
 
 template <class X, class C, class D>
 template <class Predicate>
-inline typename shared_ptr<X> Pool<X, C, D>::get(Predicate pred) {
+inline typename std::shared_ptr<X> Pool<X, C, D>::get(Predicate pred) {
   auto ul = std::unique_lock<std::mutex>(mtx_);
   while (!pred()) {
     auto sp = tryGetUnlocked();
@@ -100,7 +100,7 @@ inline typename shared_ptr<X> Pool<X, C, D>::get(Predicate pred) {
 }
 
 template <class X, class C, class D>
-inline typename shared_ptr<X> Pool<X, C, D>::get() {
+inline typename std::shared_ptr<X> Pool<X, C, D>::get() {
   auto ul = std::unique_lock<std::mutex>(mtx_);
   auto sp = tryGetUnlocked();
   if (sp)
@@ -111,7 +111,7 @@ inline typename shared_ptr<X> Pool<X, C, D>::get() {
 
 template <class X, class C, class D>
 template <class Rep, class Period>
-inline typename shared_ptr<X>
+inline typename std::shared_ptr<X>
 Pool<X, C, D>::getFor(const std::chrono::duration<Rep, Period> &timeout) {
   auto ul = std::unique_lock<std::mutex>(mtx_);
   auto sp = tryGetUnlocked();
@@ -123,7 +123,7 @@ Pool<X, C, D>::getFor(const std::chrono::duration<Rep, Period> &timeout) {
 
 template <class X, class C, class D>
 template <class Rep, class Period, class Predicate>
-inline typename shared_ptr<X>
+inline typename std::shared_ptr<X>
 Pool<X, C, D>::getFor(const std::chrono::duration<Rep, Period> &timeout,
                       Predicate pred) {
   auto ul = std::unique_lock<std::mutex>(mtx_);
