@@ -665,12 +665,12 @@ inline const Json &Json::operator[](const std::string &key) const
   return value_->operator[](key);
 }
 template <size_t N> inline Json &Json::operator[](const char (&cstr)[N]) {
-  return operator[](std::string(cstr, N));
+  return operator[](Strings::stripOf(std::string(cstr, N)));
 }
 template <size_t N>
 inline const Json &Json::operator[](const char (&cstr)[N]) const
     noexcept(false) {
-  return operator[](std::string(cstr, N));
+  return operator[](Strings::stripOf(std::string(cstr, N)));
 }
 
 inline Json &Json::operator[](size_t idx) noexcept(false) {
