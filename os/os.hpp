@@ -80,7 +80,7 @@ inline void OS::makedir(const std::string &path) noexcept(false) {
 }
 inline void OS::makedirs(std::deque<std::string> &left,
                          std::deque<std::string> &right) noexcept(false) {
-  auto path = Strings::join(left, '/');
+  auto path = Strings::deduplicate(Strings::join(left, '/'), '/');
   try {
     OS::makedir(path.c_str());
     if (right.empty())
