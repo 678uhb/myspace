@@ -213,17 +213,17 @@ inline ReturnType Strings::splitOf(const SourceType &src,
   ReturnType ret;
   SourceType one;
   for (auto &s : src) {
-    if (none_of(
-            begin(delme), end(delme),
+    if (std::none_of(
+            std::begin(delme), std::end(delme),
             [&s](const typename DelmeType::value_type &d) { return s == d; })) {
-      fill_n(inserter(one, end(one)), 1, s);
+      std::fill_n(inserter(one, std::end(one)), 1, s);
     } else if (!one.empty()) {
-      fill_n(inserter(ret, end(ret)), 1, one);
+      std::fill_n(std::inserter(ret, std::end(ret)), 1, one);
       one.clear();
     }
   }
   if (!one.empty()) {
-    fill_n(inserter(ret, end(ret)), 1, one);
+    std::fill_n(std::inserter(ret, std::end(ret)), 1, one);
   }
   return ret;
 }
@@ -255,7 +255,7 @@ inline std::string Strings::join(const Iteraterable &x,
 
   bool first = true;
   std::string result;
-  for (auto itr = begin(x); itr != end(x); itr = next(itr)) {
+  for (auto itr = std::begin(x); itr != std::end(x); itr = std::next(itr)) {
     if (!first) {
       result.append(join_token);
     }

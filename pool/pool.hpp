@@ -19,10 +19,10 @@ class Pool : public std::enable_shared_from_this<Pool<X, Creator, Deleter>> {
   typedef std::unique_ptr<X, Deleter> StorageType;
 
 public:
-  // these function may throw exception, due to use defined creater/deleter
+  // these function may throw exception, due to user defined creater/deleter
   // deleter may not to throw exception
   // c type HANDLE(void*) , better to set X to void, which return value is
-  // std::shared_ptr<void>, to void trouble
+  // std::shared_ptr<void>, to avoid trouble
   // all the impliments like std::condition_variable
   //
   std::shared_ptr<X> tryGet();
