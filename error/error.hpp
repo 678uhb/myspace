@@ -18,7 +18,7 @@ inline std::error_code Error::lastError() {
 #if defined(MYSPACE_WINDOWS)
   return std::error_code(::GetLastError(), std::system_category());
 #else
-  return std::error_code(errno, std::system_category());
+  return std::error_code(errno, std::generic_category());
 #endif
 }
 
