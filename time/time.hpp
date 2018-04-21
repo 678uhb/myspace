@@ -29,7 +29,7 @@ public:
 
 
 inline std::string Time::format(time_t t, const std::string &fmt) {
-  auto buf = new_unique<char[]>(128);
+  auto buf = newUnique<char[]>(128);
 
   struct tm _tm;
 #if defined(MYSPACE_WINDOWS)

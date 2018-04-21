@@ -41,7 +41,7 @@ private:
 
 inline std::shared_ptr<FileStatus>
 OS::status(const std::string &t_path) noexcept(false) {
-  auto st = new_shared<FileStatus>();
+  auto st = newShared<FileStatus>();
 #if defined(MYSPACE_WINDOWS)
   MYSPACE_THROW_IF_EX(OSError, 0 != _stat(t_path.c_str(), st.get()), " ",
                       t_path);

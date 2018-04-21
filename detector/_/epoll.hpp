@@ -128,7 +128,7 @@ Epoll::wait(std::chrono::high_resolution_clock::duration duration) {
 inline std::map<uint32_t, std::deque<Any>> Epoll::wait_ms(int ms) {
   std::map<uint32_t, std::deque<Any>> result;
 
-  auto events = new_unique<epoll_event[]>(candidates_.size());
+  auto events = newUnique<epoll_event[]>(candidates_.size());
 
   auto n = ::epoll_wait(epoll_, events.get(), candidates_.size(), ms);
 

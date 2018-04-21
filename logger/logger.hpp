@@ -233,7 +233,7 @@ inline void ConsoleSink::put(std::shared_ptr<LoggerItem> item) {
   }
 }
 
-inline Logger::Logger() { sinks_.push_back(new_shared<ConsoleSink>()); }
+inline Logger::Logger() { sinks_.push_back(newShared<ConsoleSink>()); }
 
 inline Logger &Logger::setLevel(int lv) {
   if (lv < LoggerLevel::Dev) {
@@ -286,7 +286,7 @@ inline Logger &Logger::printError(const char *file, int line,
 template <class... Targs>
 inline Logger &Logger::print(LoggerLevel lv, const char *file, int line,
                              Targs &&... args) {
-  auto item = new_shared<LoggerItem>();
+  auto item = newShared<LoggerItem>();
   item->file_ = file;
   item->line_ = line;
   item->lv_ = lv;

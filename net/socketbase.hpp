@@ -94,7 +94,7 @@ inline void Socketbase::connect(
              e == std::errc::operation_in_progress ||
              e == std::errc::operation_would_block ||
              e == std::errc::interrupted) {
-      auto sel = new_shared<Detector>();
+      auto sel = newShared<Detector>();
       sel->add(this, DetectType::WRITE);
       sel->wait(timeout - (this_time - begin_time));
     } else {
@@ -123,7 +123,7 @@ inline void Socketbase::connect(const Addr &addr) noexcept(false) {
              e == std::errc::operation_in_progress ||
              e == std::errc::operation_would_block ||
              e == std::errc::interrupted) {
-      auto sel = new_shared<Detector>();
+      auto sel = newShared<Detector>();
       sel->add(this, DetectType::WRITE);
       sel->wait();
     } else {

@@ -223,7 +223,7 @@ class JsonNull : public JsonValue {
 public:
   std::string dump() const override { return "null"; }
   std::shared_ptr<JsonValue> clone() const override {
-    return new_shared<JsonNull>();
+    return newShared<JsonNull>();
   }
   Json::Type type() const override { return Json::NUL; }
   bool isNull() const override { return true; }
@@ -256,7 +256,7 @@ public:
     return ss.str();
   }
   std::shared_ptr<JsonValue> clone() const override {
-    return new_shared<JsonString>(value_);
+    return newShared<JsonString>(value_);
   }
 };
 class JsonNumber : public Value<double> {
@@ -271,7 +271,7 @@ public:
     return ss.str();
   }
   std::shared_ptr<JsonValue> clone() const override {
-    return new_shared<JsonNumber>(value_);
+    return newShared<JsonNumber>(value_);
   }
 };
 class JsonBool : public Value<bool> {
@@ -287,7 +287,7 @@ public:
     return ss.str();
   }
   std::shared_ptr<JsonValue> clone() const override {
-    return new_shared<JsonBool>(value_);
+    return newShared<JsonBool>(value_);
   }
 };
 class JsonArray : public Value<Json::Array> {
@@ -318,7 +318,7 @@ public:
     return ss.str();
   }
   std::shared_ptr<JsonValue> clone() const override {
-    return new_shared<JsonArray>(value_);
+    return newShared<JsonArray>(value_);
   }
 };
 class JsonObject : public Value<Json::Object> {
@@ -343,7 +343,7 @@ public:
     return ss.str();
   }
   std::shared_ptr<JsonValue> clone() const override {
-    return new_shared<JsonObject>(value_);
+    return newShared<JsonObject>(value_);
   }
 
   friend class myspace::Json;
@@ -588,24 +588,24 @@ private:
 
 inline Json::Json(std::initializer_list<std::pair<std::string, Json>> init)
     : Json(Json::Object(init.begin(), init.end())) {}
-inline Json::Json() : value_(new_shared<jsonimpl::JsonNull>()) {}
+inline Json::Json() : value_(newShared<jsonimpl::JsonNull>()) {}
 inline Json::Json(Json &&x) { swap(x); }
 inline Json::Json(const Json::Object &x)
-    : value_(new_shared<jsonimpl::JsonObject>(x)) {}
+    : value_(newShared<jsonimpl::JsonObject>(x)) {}
 inline Json::Json(Json::Object &&x)
-    : value_(new_shared<jsonimpl::JsonObject>(std::move(x))) {}
+    : value_(newShared<jsonimpl::JsonObject>(std::move(x))) {}
 inline Json::Json(const Json::Array &x)
-    : value_(new_shared<jsonimpl::JsonArray>(x)) {}
+    : value_(newShared<jsonimpl::JsonArray>(x)) {}
 inline Json::Json(Json::Array &&x)
-    : value_(new_shared<jsonimpl::JsonArray>(std::move(x))) {}
-inline Json::Json(bool x) : value_(new_shared<jsonimpl::JsonBool>(x)) {}
+    : value_(newShared<jsonimpl::JsonArray>(std::move(x))) {}
+inline Json::Json(bool x) : value_(newShared<jsonimpl::JsonBool>(x)) {}
 inline Json::Json(const std::string &x)
-    : value_(new_shared<jsonimpl::JsonString>(x)) {}
+    : value_(newShared<jsonimpl::JsonString>(x)) {}
 inline Json::Json(std::string &&x)
-    : value_(new_shared<jsonimpl::JsonString>(std::move(x))) {}
+    : value_(newShared<jsonimpl::JsonString>(std::move(x))) {}
 inline Json::Json(const char *x)
-    : value_(new_shared<jsonimpl::JsonString>(x)){};
-inline Json::Json(double x) : value_(new_shared<jsonimpl::JsonNumber>(x)) {}
+    : value_(newShared<jsonimpl::JsonString>(x)){};
+inline Json::Json(double x) : value_(newShared<jsonimpl::JsonNumber>(x)) {}
 inline Json::Json(float x) : Json((double)x) {}
 inline Json::Json(int32_t x) : Json((double)x) {}
 inline Json::Json(uint32_t x) : Json((double)x) {}
@@ -656,7 +656,7 @@ inline Json &Json::operator[](const std::string &key) {
   try {
     return value_->operator[](key);
   } catch (...) {
-    value_ = new_shared<jsonimpl::JsonObject>(Json::Object{});
+    value_ = newShared<jsonimpl::JsonObject>(Json::Object{});
     return value_->operator[](key);
   }
 }

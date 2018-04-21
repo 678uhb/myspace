@@ -27,9 +27,9 @@ private:
   std::unordered_map<int, DetectorImpl::Candidate> candidates_;
 
   // fd_set could be very large, according to FD_SETSIZE
-  std::unique_ptr<fd_set> r_ = new_unique<fd_set>();
-  std::unique_ptr<fd_set> w_ = new_unique<fd_set>();
-  std::unique_ptr<fd_set> e_ = new_unique<fd_set>();
+  std::unique_ptr<fd_set> r_ = newUnique<fd_set>();
+  std::unique_ptr<fd_set> w_ = newUnique<fd_set>();
+  std::unique_ptr<fd_set> e_ = newUnique<fd_set>();
 };
 
 template <class X> inline bool Select::add(X &&x, DetectType dt) {

@@ -67,14 +67,14 @@ inline std::shared_ptr<tcp::Socket> Acceptor::accept(
     auto n = (int)::accept(sock_, (sockaddr *)&addr, &addrlen);
 
     if (n >= 0) {
-      auto sock = new_shared<tcp::Socket>(n);
+      auto sock = newShared<tcp::Socket>(n);
       return sock;
     } else {
       auto e = Error::lastError();
       if (e == std::errc::not_a_socket || e == std::errc::invalid_argument) {
         MYSPACE_THROW_EX(AcceptorError);
       }
-      auto sel = new_shared<Detector>();
+      auto sel = newShared<Detector>();
       sel->add(this);
       sel->wait(timeout - (this_time - begin_time));
     }
@@ -94,14 +94,14 @@ inline std::shared_ptr<tcp::Socket> Acceptor::accept() noexcept(false) {
     auto n = (int)::accept(sock_, (sockaddr *)&addr, &addrlen);
 
     if (n >= 0) {
-      auto sock = new_shared<tcp::Socket>(n);
+      auto sock = newShared<tcp::Socket>(n);
       return sock;
     }
     auto e = Error::lastError();
     if (e == std::errc::not_a_socket || e == std::errc::invalid_argument) {
       MYSPACE_THROW_EX(AcceptorError);
     }
-    auto sel = new_shared<Detector>();
+    auto sel = newShared<Detector>();
     sel->add(this);
     sel->wait();
   }

@@ -71,7 +71,7 @@ template <class Function, class... Arguments>
 inline auto ThreadPool::push(bool putfront, Function &&f, Arguments &&... args)
     -> std::future<typename std::result_of<Function(Arguments...)>::type> {
   using return_t = typename std::result_of<Function(Arguments...)>::type;
-  auto job = new_shared<std::packaged_task<return_t()>>(
+  auto job = newShared<std::packaged_task<return_t()>>(
       std::bind(std::forward<Function>(f), std::forward<Arguments>(args)...));
   auto ret = job->get_future();
   MYSPACE_IF_LOCK(jobs_) {

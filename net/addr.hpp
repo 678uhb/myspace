@@ -88,7 +88,7 @@ inline const sockaddr_in &Addr::addr() const { return addr_; }
 
 inline std::string Addr::inetNtop(const in_addr &addr, int32_t family) {
   static constexpr size_t bufflen = 128;
-  auto buff = new_unique<char[]>(bufflen);
+  auto buff = newUnique<char[]>(bufflen);
 #if defined(MYSPACE_WINDOWS)
   return ::inet_ntop(family, (PVOID)&addr, buff.get(), bufflen);
 #else

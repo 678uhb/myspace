@@ -177,7 +177,7 @@ inline std::wstring toWideChar(uint32_t codepage, const std::string &src) {
       ::MultiByteToWideChar(codepage, 0, src.c_str(), src.size(), nullptr, 0);
   if (dstlen <= 0)
     return std::wstring();
-  auto dstbuffer = new_unique<wchar_t[]>(dstlen);
+  auto dstbuffer = newUnique<wchar_t[]>(dstlen);
   auto n = ::MultiByteToWideChar(codepage, 0, src.c_str(), src.size(),
                                  dstbuffer.get(), dstlen);
   if (n <= 0)
@@ -190,7 +190,7 @@ inline std::string toMultiByte(uint32_t codepage, const std::wstring &src) {
                                       nullptr, 0, nullptr, nullptr);
   if (dstlen <= 0)
     return std::string();
-  auto dstbuffer = new_unique<char[]>(dstlen);
+  auto dstbuffer = newUnique<char[]>(dstlen);
   auto n = ::WideCharToMultiByte(codepage, 0, src.c_str(), src.size(),
                                  dstbuffer.get(), dstlen, nullptr, nullptr);
   if (n <= 0)
@@ -216,7 +216,7 @@ inline std::string Iconv::convert(const std::string &src) {
   char *psrc = (char *)src.c_str();
   size_t srcleft = src.size();
   const size_t dstlen = std::max(size_t(128), std::min(size_t(1024), srcleft));
-  auto dst = new_unique<char[]>(dstlen);
+  auto dst = newUnique<char[]>(dstlen);
   std::string result;
   while (srcleft > 0) {
     char *pdst = dst.get();

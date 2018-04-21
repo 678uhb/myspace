@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "myspace/_/stdafx.hpp"

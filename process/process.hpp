@@ -22,7 +22,7 @@ namespace processimpl {
 inline std::string pwd() {
   int n = 0;
   static constexpr size_t max_path = 4096;
-  auto name = new_unique<char[]>(max_path);
+  auto name = newUnique<char[]>(max_path);
 #if defined(MYSPACE_WINDOWS)
   n = ::GetCurrentDirectory(max_path, name.get());
 #else
@@ -36,7 +36,7 @@ inline std::string pwd() {
 
 inline std::string Process::getMyFullName() {
   static constexpr size_t max_path = 4096;
-  auto name = new_unique<char[]>(max_path);
+  auto name = newUnique<char[]>(max_path);
   int n = 0;
 #if defined(MYSPACE_WINDOWS)
   n = ::GetModuleFileName(nullptr, name.get(), max_path);

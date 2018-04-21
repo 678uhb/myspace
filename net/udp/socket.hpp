@@ -79,7 +79,7 @@ Socket::send(const std::string &data,
           e == std::errc::resource_unavailable_try_again ||
           e == std::errc::interrupted ||
           e == std::errc::operation_in_progress) {
-        auto sel = new_shared<Detector>();
+        auto sel = newShared<Detector>();
         sel->add(this, DetectType::WRITE);
         sel->wait(timeout - (this_time - begin_time));
         continue;
@@ -111,7 +111,7 @@ inline size_t Socket::send(const std::string &data) {
       if (e == std::errc::operation_would_block ||
           e == std::errc::interrupted ||
           e == std::errc::operation_in_progress) {
-        auto sel = new_shared<Detector>();
+        auto sel = newShared<Detector>();
         sel->add(this, DetectType::WRITE);
         sel->wait();
         continue;
@@ -144,7 +144,7 @@ inline size_t Socket::sendto(const Addr &addr, const std::string &data) {
       if (e == std::errc::operation_would_block ||
           e == std::errc::interrupted ||
           e == std::errc::operation_in_progress) {
-        auto sel = new_shared<Detector>();
+        auto sel = newShared<Detector>();
         sel->add(this, DetectType::WRITE);
         sel->wait();
         continue;
@@ -162,7 +162,7 @@ Socket::recv(std::chrono::high_resolution_clock::duration timeout) {
 
   size_t buflen = 4096;
 
-  auto buf = new_unique<char[]>(buflen);
+  auto buf = newUnique<char[]>(buflen);
 
   SocketOpt::setBlock(sock_, false);
 
@@ -186,7 +186,7 @@ Socket::recv(std::chrono::high_resolution_clock::duration timeout) {
       if (e == std::errc::operation_would_block ||
           e == std::errc::interrupted ||
           e == std::errc::operation_in_progress) {
-        auto sel = new_shared<Detector>();
+        auto sel = newShared<Detector>();
         sel->add(this);
         sel->wait(timeout - (this_time - begin_time));
         continue;
@@ -203,7 +203,7 @@ inline std::string Socket::recv() {
 
   size_t buflen = 4096;
 
-  auto buf = new_unique<char[]>(buflen);
+  auto buf = newUnique<char[]>(buflen);
 
   SocketOpt::setBlock(sock_, true);
 
@@ -222,7 +222,7 @@ Socket::recvfrom(Addr &dst,
 
   size_t buflen = 4096;
 
-  auto buf = new_unique<char[]>(buflen);
+  auto buf = newUnique<char[]>(buflen);
 
   SocketOpt::setBlock(sock_, false);
 
@@ -254,7 +254,7 @@ Socket::recvfrom(Addr &dst,
       if (e == std::errc::operation_would_block ||
           e == std::errc::interrupted ||
           e == std::errc::operation_in_progress) {
-        auto sel = new_shared<Detector>();
+        auto sel = newShared<Detector>();
         sel->add(this);
         sel->wait(timeout - (this_time - begin_time));
         continue;

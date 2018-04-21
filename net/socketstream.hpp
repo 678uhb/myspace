@@ -148,13 +148,13 @@ inline SocketStream<SockType>::SocketStream(
 
 template <class SockType>
 inline SocketStream<SockType>::SocketStream(const Addr &addr)
-    : use_timeout_(false), sock_(new_shared<SockType>(addr)) {}
+    : use_timeout_(false), sock_(newShared<SockType>(addr)) {}
 
 template <class SockType>
 inline SocketStream<SockType>::SocketStream(
     const Addr &addr, std::chrono::high_resolution_clock::duration timeout)
     : use_timeout_(true), timeout_(timeout),
-      sock_(new_shared<SockType>(addr, timeout)) {}
+      sock_(newShared<SockType>(addr, timeout)) {}
 
 template <class SockType>
 template <class X>
