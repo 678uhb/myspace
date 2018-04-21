@@ -39,14 +39,12 @@ public:
   template <class... Types>
   static void Throw(const char *file, int line, Types &&... types);
 
-  static void Throw(const std::exception &e);
+  template <class X> static void Throw(X &&x);
 
   static std::string dump();
 
 private:
-  static void _dump(std::string &s, const std::exception &e);
-
-  static void _dump(std::string &s);
+  template <class X> static void _dump(std::string &s, X &&x);
 };
 
 template <class... Types>
@@ -63,47 +61,37 @@ template <class... Types>
 inline void Exception::Throw(const char *file, int line, Types &&... types) {
   Exception::Throw(Exception(file, line, std::forward<Types>(types)...));
 }
-inline void Exception::Throw(const std::exception &e) {
+
+template <class X> inline void Exception::Throw(X &&x) {
   if (std::current_exception()) {
-    throw_with_nested(e);
+    std::throw_with_nested(std::forward<X>(x));
   } else {
-    throw e;
+    throw x;
   }
 }
 inline std::string Exception::dump() {
+  std::string s;
   try {
-    std::string s;
-    _dump(s);
-    return s;
-  } catch (...) {
-    MYSPACE_DEV("exception dump !!");
-  }
-  return std::string{};
-}
-// inline const char *Exception::what() const  { return desc_.c_str(); }
-inline void Exception::_dump(std::string &s, const std::exception &e) {
-  try {
-    rethrow_if_nested(e);
-  } catch (const std::exception &x) {
-    _dump(s, x);
-  } catch (...) {
-  }
-
-  if (s.empty() || s.back() != '\n') {
-    s.append(1, '\n');
-  }
-  s.append(e.what());
-}
-inline void Exception::_dump(std::string &s) {
-  try {
-    auto e = std::current_exception();
-    if (e) {
-      std::rethrow_exception(e);
+    auto eptr = std::current_exception();
+    if (eptr) {
+      std::rethrow_exception(eptr);
     }
   } catch (const std::exception &e) {
     _dump(s, e);
   } catch (...) {
   }
+  return s;
 }
+template <class X> inline void Exception::_dump(std::string &s, X &&x) {
+  try {
+    std::rethrow_if_nested(x);
+  } catch (const std::exception &e) {
+    _dump(s, e);
+  } catch (...) {
+  }
 
+  if (!s.empty())
+    s.append("  ---  ");
+  s.append(x.what());
+}
 MYSPACE_END
