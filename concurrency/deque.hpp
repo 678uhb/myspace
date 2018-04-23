@@ -1,4 +1,3 @@
-
 #pragma once
 #include "myspace/_/stdafx.hpp"
 #include "myspace/concurrency/exception.hpp"
@@ -238,7 +237,7 @@ template <class X>
 template <class Rep, class Period>
 void Deque<X>::pushFor(bool front, const X &x,
                        const std::chrono::duration<Rep, Period> &timeout) {
-  auto begin_time = high_resolution_clock::now();
+  auto begin_time = std::chrono::high_resolution_clock::now();
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_);;) {
     if (deque_.size() < maxSize()) {
       if (front)
@@ -248,7 +247,7 @@ void Deque<X>::pushFor(bool front, const X &x,
       ul.unlock();
       break;
     } else {
-      auto now = high_resolution_clock::now();
+      auto now = std::chrono::high_resolution_clock::now();
       MYSPACE_THROW_IF_EX(concurrency::TimeOut, now - begin_time > timeout);
       cond_.wait_for(ul, now - begin_time,
                      [&]() { return deque_.size() < maxSize(); });
@@ -261,7 +260,7 @@ template <class Rep, class Period, class Predicate>
 void Deque<X>::pushFor(bool front, const X &x,
                        const std::chrono::duration<Rep, Period> &timeout,
                        Predicate pred) {
-  auto begin_time = high_resolution_clock::now();
+  auto begin_time = std::chrono::high_resolution_clock::now();
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_); !pred();) {
     if (deque_.size() < maxSize()) {
       if (front)
@@ -271,7 +270,7 @@ void Deque<X>::pushFor(bool front, const X &x,
       ul.unlock();
       break;
     } else {
-      auto now = high_resolution_clock::now();
+      auto now = std::chrono::high_resolution_clock::now();
       MYSPACE_THROW_IF_EX(concurrency::TimeOut, now - begin_time > timeout);
       cond_.wait_for(ul, now - begin_time,
                      [&]() { return deque_.size() < maxSize() || pred(); });
@@ -313,14 +312,14 @@ template <class X>
 template <class Rep, class Period>
 inline X Deque<X>::popFor(bool front,
                           const std::chrono::duration<Rep, Period> &timeout) {
-  auto begin_time = high_resolution_clock::now();
+  auto begin_time = std::chrono::high_resolution_clock::now();
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_);;) {
     if (!deque_.empty()) {
       MYSPACE_DEFER(cond_.notify_one());
       MYSPACE_DEFER(if (front) deque_.pop_front(); else deque_.pop_back(););
       return (front ? deque_.front() : deque_.back());
     } else {
-      auto now = high_resolution_clock::now();
+      auto now = std::chrono::high_resolution_clock::now();
       MYSPACE_THROW_IF_EX(concurrency::TimeOut, now - begin_time > timeout);
       cond_.wait_for(ul, now - begin_time, [&]() { return !deque_.empty(); });
     }
@@ -333,14 +332,14 @@ template <class Rep, class Period, class Predicate>
 inline X Deque<X>::popFor(bool front,
                           const std::chrono::duration<Rep, Period> &timeout,
                           Predicate pred) {
-  auto begin_time = high_resolution_clock::now();
+  auto begin_time = std::chrono::high_resolution_clock::now();
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_); !pred();) {
     if (!deque_.empty()) {
       MYSPACE_DEFER(cond_.notify_one());
       MYSPACE_DEFER(if (front) deque_.pop_front(); else deque_.pop_back(););
       return (front ? deque_.front() : deque_.back());
     } else {
-      auto now = high_resolution_clock::now();
+      auto now = std::chrono::high_resolution_clock::now();
       MYSPACE_THROW_IF_EX(concurrency::TimeOut, now - begin_time > timeout);
       cond_.wait_for(ul, now - begin_time,
                      [&]() { return !deque_.empty() || pred(); });
