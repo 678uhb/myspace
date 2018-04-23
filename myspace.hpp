@@ -6,6 +6,7 @@
 #include "myspace/algorithm/algorithm.hpp"
 #include "myspace/any/any.hpp"
 #include "myspace/codec/codec.hpp"
+#include "myspace/concurrency/factory.hpp"
 #include "myspace/config/config.hpp"
 #include "myspace/coroutine/coroutine.hpp"
 #include "myspace/defer/defer.hpp"

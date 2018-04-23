@@ -3,8 +3,9 @@
 
 #include "myspace/_/stdafx.hpp"
 #include "myspace/critical/critical.hpp"
-#include "myspace/mutex/mutex.hpp"
 #include "myspace/defer/defer.hpp"
+#include "myspace/logger/logger.hpp"
+#include "myspace/mutex/mutex.hpp"
 
 MYSPACE_BEGIN
 
@@ -103,6 +104,7 @@ inline void ThreadPool::workerProc() {
       try {
         job();
       } catch (...) {
+        MYSPACE_WARN_EXCEPTION();
       }
     }
   }
