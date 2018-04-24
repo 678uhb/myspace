@@ -4,6 +4,7 @@
 #include "myspace/_/stdafx.hpp"
 #include "myspace/annoymous/annoymous.hpp"
 #include "myspace/exception/exception.hpp"
+#include "myspace/logger/logger.hpp"
 MYSPACE_BEGIN
 
 #define MYSPACE_DEFER(f) MYSPACE_ANNOYMOUS(myspace::Defer)([&]() { f; })
