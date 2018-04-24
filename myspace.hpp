@@ -29,6 +29,10 @@
 #include "myspace/strings/sstream.hpp"
 #include "myspace/strings/strings.hpp"
 #include "myspace/threadpool/threadpool.hpp"
-#include "myspace/wave/wave.hpp"
-#include "myspace/wave/wavefile.hpp"
-#include "myspace/wave/wavetool.hpp"
+#include "myspace/wav/file.hpp"
+#include "myspace/wav/tool.hpp"
+#include "myspace/wav/wav.hpp"
+
+#if defined(MYSPACE_WINDOWS)
+#include "myspace/microphone/microphone.hpp"
+#endif

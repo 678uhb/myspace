@@ -71,7 +71,6 @@ inline Ucontext::Ucontext(Function &&func, Arguments &&... args)
       std::bind(std::forward<Function>(func), std::forward<Arguments>(args)...);
 
   func_ = [f](Ucontext &x) { f(x); };
-
 }
 inline Ucontext::~Ucontext() {
 
@@ -80,12 +79,8 @@ inline Ucontext::~Ucontext() {
   while (!callee_is_quit_) {
     resume();
   }
-
 }
-inline Ucontext::Ucontext(Ucontext &&u) {
-
-  swap(std::move(u));
-}
+inline Ucontext::Ucontext(Ucontext &&u) { swap(std::move(u)); }
 inline void Ucontext::swap(Ucontext &&f) {
   if (&f != this) {
     func_.swap(f.func_);

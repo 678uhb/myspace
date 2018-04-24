@@ -79,9 +79,9 @@ inline Uri::Uri(const std::string &t_uri) noexcept(false) {
     }
   }
   if (path_.empty())
-	  path_ = '/';
+    path_ = '/';
   if (suburi_.empty())
-	  suburi_ = '/';
+    suburi_ = '/';
 }
 inline std::string Uri::debug() const {
   std::string result = "addr: " + domain_ + ":" + StringStream(port_).str() +

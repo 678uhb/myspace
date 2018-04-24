@@ -27,6 +27,7 @@
 
 #include <Windows.h>
 
+#include <Mmsystem.h>
 #include <Objbase.h>
 #include <WS2tcpip.h>
 #include <WinSock2.h>
@@ -38,7 +39,7 @@
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "Iphlpapi.lib")
-//#pragma comment(lib, "Dnsapi.lib")
+#pragma comment(lib, "Winmm.lib")
 
 #elif defined(MYSPACE_LINUX)
 

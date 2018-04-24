@@ -11,22 +11,22 @@ MYSPACE_BEGIN
 class Defer {
 public:
   template <class Function, class... Arguments>
-  Defer(Function &&f, Arguments &&... args) ;
+  Defer(Function &&f, Arguments &&... args);
 
-  ~Defer() ;
+  ~Defer();
 
-  void dismiss() ;
+  void dismiss();
 
 private:
   std::function<void()> defered_ = nullptr;
 };
 
 template <class Function, class... Arguments>
-inline Defer::Defer(Function &&f, Arguments &&... args) 
+inline Defer::Defer(Function &&f, Arguments &&... args)
     : defered_(std::bind(std::forward<Function &&>(f),
                          std::forward<Arguments &&>(args)...)) {}
 
-inline Defer::~Defer()  {
+inline Defer::~Defer() {
   if (defered_) {
     try {
       defered_();
@@ -36,6 +36,6 @@ inline Defer::~Defer()  {
   }
 }
 
-inline void Defer::dismiss()  { defered_ = nullptr; }
+inline void Defer::dismiss() { defered_ = nullptr; }
 
 MYSPACE_END

@@ -8,11 +8,11 @@ class Any {
   template <class X> using StorageType = typename std::decay<X>::type;
 
 public:
-  Any() ;
+  Any();
 
   Any(const Any &a);
 
-  Any(Any &&a) ;
+  Any(Any &&a);
 
   template <class X,
             typename std::enable_if<
@@ -65,11 +65,11 @@ private:
   Base *ptr_ = nullptr;
 };
 
-inline Any::Any()  : ptr_(nullptr) {}
+inline Any::Any() : ptr_(nullptr) {}
 
 inline Any::Any(const Any &a) : ptr_(a.clone()) {}
 
-inline Any::Any(Any &&a)  : ptr_(a.ptr_) { a.ptr_ = nullptr; }
+inline Any::Any(Any &&a) : ptr_(a.ptr_) { a.ptr_ = nullptr; }
 
 template <class X, typename std::enable_if<
                        !std::is_same<typename std::decay<X>::type, Any>::value,

@@ -22,8 +22,7 @@ newUnique(size_t count) {
 }
 
 template <class Type, class... Arguments>
-inline std::shared_ptr<Type> 
-newShared(Arguments &&... args) {
+inline std::shared_ptr<Type> newShared(Arguments &&... args) {
   return std::move(std::make_shared<Type>(std::forward<Arguments>(args)...));
 }
 

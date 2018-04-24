@@ -26,8 +26,6 @@ public:
         }                                                                      \
       }())
 
-
-
 inline std::string Time::format(time_t t, const std::string &fmt) {
   auto buf = newUnique<char[]>(128);
 
@@ -55,7 +53,5 @@ Time::costs(Function &&func, Arguments &&... args) {
   func(std::forward<Arguments>(args)...);
   return std::chrono::high_resolution_clock::now() - begin;
 }
-
-
 
 MYSPACE_END

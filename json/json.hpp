@@ -603,8 +603,7 @@ inline Json::Json(const std::string &x)
     : value_(newShared<jsonimpl::JsonString>(x)) {}
 inline Json::Json(std::string &&x)
     : value_(newShared<jsonimpl::JsonString>(std::move(x))) {}
-inline Json::Json(const char *x)
-    : value_(newShared<jsonimpl::JsonString>(x)){};
+inline Json::Json(const char *x) : value_(newShared<jsonimpl::JsonString>(x)){};
 inline Json::Json(double x) : value_(newShared<jsonimpl::JsonNumber>(x)) {}
 inline Json::Json(float x) : Json((double)x) {}
 inline Json::Json(int32_t x) : Json((double)x) {}

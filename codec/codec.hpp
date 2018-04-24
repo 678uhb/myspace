@@ -1,9 +1,9 @@
 
 #pragma once
 #include "myspace/_/stdafx.hpp"
+#include "myspace/defer/defer.hpp"
 #include "myspace/logger/logger.hpp"
 #include "myspace/memory/memory.hpp"
-#include "myspace/defer/defer.hpp"
 MYSPACE_BEGIN
 
 class Codec {
