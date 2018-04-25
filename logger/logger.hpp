@@ -74,6 +74,22 @@ MYSPACE_BEGIN
 #define MYSPACE_ERROR_SECONDS(x, ...)                                          \
   MYSPACE_IF_PAST_SECONDS(x) MYSPACE_ERROR(__VA_ARGS__);
 
+#define MYSPACE_DEV_IF(x, ...)                                                 \
+  if ((x))                                                                     \
+  MYSPACE_DEV(#x, ##__VA_ARGS__)
+#define MYSPACE_DEBUG_IF(x, ...)                                               \
+  if ((x))                                                                     \
+  MYSPACE_DEBUG(#x, ##__VA_ARGS__)
+#define MYSPACE_INFO_IF(x, ...)                                                \
+  if ((x))                                                                     \
+  MYSPACE_INFO(#x, ##__VA_ARGS__)
+#define MYSPACE_WARN_IF(x, ...)                                                \
+  if ((x))                                                                     \
+  MYSPACE_WARN(#x, ##__VA_ARGS__)
+#define MYSPACE_ERROR_IF(x, ...)                                               \
+  if ((x))                                                                     \
+  MYSPACE_ERROR(#x, ##__VA_ARGS__)
+
 enum LoggerLevel {
   Dev = 0,
   Debug,
