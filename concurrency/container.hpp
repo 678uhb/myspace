@@ -5,7 +5,7 @@ MYSPACE_BEGIN
 
 namespace concurrency {
 
-template <class X, class Cont> class Container {
+template <class X, template <class...> class Cont> class Container {
 public:
   void pushFront(const X &x);
 
@@ -98,42 +98,43 @@ private:
   friend class concurrency::Factory;
 };
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Predicate>
 inline void Container<X, Cont>::pushFront(const X &x, Predicate pred) {
   push(true, x, pred);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Predicate>
 inline void Container<X, Cont>::pushBack(const X &x, Predicate pred) {
   pop(false, x, pred);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Predicate>
 inline X Container<X, Cont>::popFront(Predicate pred) {
   return pop(true, pred);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Predicate>
 inline X Container<X, Cont>::popBack(Predicate pred) {
   return pop(false, pred);
 }
 
-template <class X, class Cont> inline X Container<X, Cont>::popFront() {
+template <class X, template <class...> class Cont>
+inline X Container<X, Cont>::popFront() {
   return pop(true);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period>
 inline X Container<X, Cont>::popFrontFor(
     const std::chrono::duration<Rep, Period> &timeout) noexcept(false) {
   return popFor(true, timeout);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period, class Predicate>
 inline X Container<X, Cont>::popFrontFor(
     const std::chrono::duration<Rep, Period> &timeout,
@@ -141,18 +142,19 @@ inline X Container<X, Cont>::popFrontFor(
   return popFor(true, timeout, pred);
 }
 
-template <class X, class Cont> inline X Container<X, Cont>::popBack() {
+template <class X, template <class...> class Cont>
+inline X Container<X, Cont>::popBack() {
   return pop(false);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period>
 inline X Container<X, Cont>::popBackFor(
     const std::chrono::duration<Rep, Period> &timeout) noexcept(false) {
   return popFor(false, timeout);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period, class Predicate>
 inline X Container<X, Cont>::popBackFor(
     const std::chrono::duration<Rep, Period> &timeout,
@@ -160,12 +162,12 @@ inline X Container<X, Cont>::popBackFor(
   return popFor(false, timeout, pred);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 inline void Container<X, Cont>::pushFront(const X &x) {
   push(true, x);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period>
 inline void Container<X, Cont>::pushFrontFor(
     const X &x,
@@ -173,7 +175,7 @@ inline void Container<X, Cont>::pushFrontFor(
   pushFor(true, x, timeout);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period, class Predicate>
 inline void Container<X, Cont>::pushFrontFor(
     const X &x, const std::chrono::duration<Rep, Period> &timeout,
@@ -181,12 +183,12 @@ inline void Container<X, Cont>::pushFrontFor(
   pushFor(true, x, timeout, pred);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 inline void Container<X, Cont>::pushBack(const X &x) {
   push(false, x);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period>
 inline void Container<X, Cont>::pushBackFor(
     const X &x,
@@ -194,7 +196,7 @@ inline void Container<X, Cont>::pushBackFor(
   pushFor(false, x, timeout);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period, class Predicate>
 inline void Container<X, Cont>::pushBackFor(
     const X &x, const std::chrono::duration<Rep, Period> &timeout,
@@ -202,10 +204,10 @@ inline void Container<X, Cont>::pushBackFor(
   push(false, x, timeout, pred);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 inline Container<X, Cont>::Container(size_t max_size) : max_size_(max_size) {}
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 inline void Container<X, Cont>::push(bool front, const X &x) {
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_);;) {
     if (cont_.size() < maxSize()) {
@@ -221,7 +223,7 @@ inline void Container<X, Cont>::push(bool front, const X &x) {
   cond_.notify_one();
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Predicate>
 inline void Container<X, Cont>::push(bool front, const X &x, Predicate pred) {
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_); !pred();) {
@@ -239,7 +241,7 @@ inline void Container<X, Cont>::push(bool front, const X &x, Predicate pred) {
   MYSPACE_THROW_EX(PredicateMeet);
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period>
 void Container<X, Cont>::pushFor(
     bool front, const X &x, const std::chrono::duration<Rep, Period> &timeout) {
@@ -261,7 +263,7 @@ void Container<X, Cont>::pushFor(
   }
   cond_.notify_one();
 }
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period, class Predicate>
 void Container<X, Cont>::pushFor(
     bool front, const X &x, const std::chrono::duration<Rep, Period> &timeout,
@@ -285,7 +287,8 @@ void Container<X, Cont>::pushFor(
   cond_.notify_one();
 }
 
-template <class X, class Cont> inline X Container<X, Cont>::pop(bool front) {
+template <class X, template <class...> class Cont>
+inline X Container<X, Cont>::pop(bool front) {
   MYSPACE_DEFER(cond_.notify_one());
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_);;) {
     if (!cont_.empty()) {
@@ -298,7 +301,7 @@ template <class X, class Cont> inline X Container<X, Cont>::pop(bool front) {
   throw;
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Predicate>
 inline X Container<X, Cont>::pop(bool front, Predicate pred) {
   MYSPACE_DEFER(cond_.notify_one());
@@ -314,7 +317,7 @@ inline X Container<X, Cont>::pop(bool front, Predicate pred) {
   throw;
 }
 
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period>
 inline X
 Container<X, Cont>::popFor(bool front,
@@ -334,7 +337,7 @@ Container<X, Cont>::popFor(bool front,
   MYSPACE_THROW_EX(concurrency::TimeOut);
   throw;
 }
-template <class X, class Cont>
+template <class X, template <class...> class Cont>
 template <class Rep, class Period, class Predicate>
 inline X
 Container<X, Cont>::popFor(bool front,
@@ -357,17 +360,20 @@ Container<X, Cont>::popFor(bool front,
   throw;
 }
 
-template <class X, class Cont> bool Container<X, Cont>::empty() {
+template <class X, template <class...> class Cont>
+bool Container<X, Cont>::empty() {
   auto ul = std::unique_lock<std::recursive_mutex>(mtx_);
   return cont_.empty();
 }
 
-template <class X, class Cont> size_t Container<X, Cont>::size() {
+template <class X, template <class...> class Cont>
+size_t Container<X, Cont>::size() {
   auto ul = std::unique_lock<std::recursive_mutex>(mtx_);
   return cont_.size();
 }
 
-template <class X, class Cont> size_t Container<X, Cont>::maxSize() const {
+template <class X, template <class...> class Cont>
+size_t Container<X, Cont>::maxSize() const {
   return std::min(max_size_, cont_.max_size());
 }
 } // namespace concurrency

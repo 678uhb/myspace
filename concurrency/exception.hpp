@@ -1,3 +1,4 @@
+#pragma once
 #include "myspace/_/stdafx.hpp"
 #include "myspace/exception/exception.hpp"
 MYSPACE_BEGIN
