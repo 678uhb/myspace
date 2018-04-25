@@ -98,6 +98,28 @@ private:
   friend class concurrency::Factory;
 };
 
+namespace contimpl {
+template <class X, template <class...> class C> X pop(bool front, C<X> &c) {
+  MYSPACE_DEFER(if (front) c.pop_front(); else c.pop_back(););
+  return (front ? c.front() : c.back());
+}
+template <class X> X pop(bool front, std::set<X> &c) {
+  MYSPACE_DEFER(if (front) c.erase(c.begin());
+                else c.erase(std::prev(c.end())););
+  return (front ? *c.begin() : *c.rbegin());
+}
+template <class X, template <class...> class C>
+void push(bool front, C<X> &c, const X &x) {
+  if (front)
+    c.push_front(x);
+  else
+    c.push_back(x);
+}
+template <class X> void push(bool front, std::set<X> &c, const X &x) {
+  c.insert(x);
+}
+} // namespace contimpl
+
 template <class X, template <class...> class Cont>
 template <class Predicate>
 inline void Container<X, Cont>::pushFront(const X &x, Predicate pred) {
@@ -211,10 +233,7 @@ template <class X, template <class...> class Cont>
 inline void Container<X, Cont>::push(bool front, const X &x) {
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_);;) {
     if (cont_.size() < maxSize()) {
-      if (front)
-        cont_.push_front(x);
-      else
-        cont_.push_back(x);
+      contimpl::push(front, cont_, x);
       break;
     } else {
       cond_.wait(ul, [&]() { return cont_.size() < maxSize(); });
@@ -326,8 +345,7 @@ Container<X, Cont>::popFor(bool front,
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_);;) {
     if (!cont_.empty()) {
       MYSPACE_DEFER(cond_.notify_one());
-      MYSPACE_DEFER(if (front) cont_.pop_front(); else cont_.pop_back(););
-      return (front ? cont_.front() : cont_.back());
+      return contimpl::pop(front, cont_);
     } else {
       auto now = std::chrono::high_resolution_clock::now();
       MYSPACE_THROW_IF_EX(concurrency::TimeOut, now - begin_time > timeout);
