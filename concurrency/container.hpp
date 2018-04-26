@@ -321,7 +321,7 @@ inline X Container<X, Cont>::pop(bool front) {
       cond_.wait_for(ul, [&]() { return !cont_.empty(); });
     }
   }
-  throw;
+  throw; // not reached
 }
 
 template <class X, template <class...> class Cont>
@@ -337,7 +337,7 @@ inline X Container<X, Cont>::pop(bool front, Predicate pred) {
     }
   }
   MYSPACE_THROW_EX(PredicateMeet);
-  throw;
+  throw; // not reached
 }
 template <class X, template <class...> class Cont>
 inline void Container<X, Cont>::notifyAll() {
