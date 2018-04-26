@@ -7,6 +7,10 @@ namespace concurrency {
 
 template <class X, template <class...> class Cont> class Container {
 public:
+  void notifyAll();
+
+  void notifyOne();
+
   void pushFront(const X &x);
 
   template <class Predicate> void pushFront(const X &x, Predicate pred);
@@ -334,6 +338,14 @@ inline X Container<X, Cont>::pop(bool front, Predicate pred) {
   }
   MYSPACE_THROW_EX(PredicateMeet);
   throw;
+}
+template <class X, template <class...> class Cont>
+inline void Container<X, Cont>::notifyAll() {
+  cond_.notify_all();
+}
+template <class X, template <class...> class Cont>
+inline void Container<X, Cont>::notifyOne() {
+  cond_.notify_one();
 }
 
 template <class X, template <class...> class Cont>
