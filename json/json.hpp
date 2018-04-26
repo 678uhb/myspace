@@ -74,6 +74,8 @@ public:
   std::string toString() const;
   std::string to_json() const;
 
+  void clear();
+
   // map like access
   Json &operator[](const std::string &);
   const Json &operator[](const std::string &) const noexcept(false);
@@ -585,7 +587,7 @@ private:
 }; // namespace jsonimpl
 
 } // namespace jsonimpl
-
+inline void Json::clear() { *this = Json(); }
 inline Json::Json(std::initializer_list<std::pair<std::string, Json>> init)
     : Json(Json::Object(init.begin(), init.end())) {}
 inline Json::Json() : value_(newShared<jsonimpl::JsonNull>()) {}
