@@ -38,7 +38,6 @@ private:
       "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
       "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF" // 32
                                                                          // (33)
-
       "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"     // 10 (43)
       "\x3E"                                         // 1 / (44)
       "\xFF\xFF\xFF"                                 // 3   (47)
@@ -95,7 +94,7 @@ inline std::string Codec::convertUtf8ToGbk(const std::string &src) {
 
 inline std::string Codec::encodeBase64(const std::string &src) {
   std::string result;
-  uint8_t a3[3] = {0}, a4[4] = {0};
+  uint8_t a3[3] = { 0 }, a4[4] = { 0 };
   size_t i = 0;
   result.reserve(EncodedLength(src.size()));
   for (auto c : src) {
@@ -123,7 +122,7 @@ inline std::string Codec::encodeBase64(const std::string &src) {
 inline std::string Codec::decodeBase64(const std::string &src) {
   std::string result;
   size_t i = 0;
-  uint8_t a3[3] = {0}, a4[4] = {0};
+  uint8_t a3[3] = { 0 }, a4[4] = { 0 };
   for (auto c : src) {
     if (c == '=') {
       break;

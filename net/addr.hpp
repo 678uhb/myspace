@@ -40,7 +40,7 @@ public:
   const sockaddr_in &addr() const;
 
 private:
-  sockaddr_in addr_ = {0};
+  sockaddr_in addr_ = { 0 };
 };
 
 inline Addr::Addr() { addr_.sin_family = AF_INET; }
@@ -90,7 +90,7 @@ inline std::string Addr::inetNtop(const in_addr &addr, int32_t family) {
   static constexpr size_t bufflen = 128;
   auto buff = newUnique<char[]>(bufflen);
 #if defined(MYSPACE_WINDOWS)
-  return ::inet_ntop(family, (PVOID)&addr, buff.get(), bufflen);
+  return ::inet_ntop(family, (PVOID) & addr, buff.get(), bufflen);
 #else
   return ::inet_ntop(family, (const void *)&addr, buff.get(), bufflen);
 #endif

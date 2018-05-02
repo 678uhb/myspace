@@ -54,8 +54,7 @@ inline Exception::Exception(const char *file, int line, Types &&... types)
                        (Error::lastError().value() == 0
                             ? " "
                             : " " + Error::strerror(Error::lastError()) + " "),
-                       std::forward<Types>(types)...)
-              .str()) {}
+                       std::forward<Types>(types)...).str()) {}
 
 template <class... Types>
 inline void Exception::Throw(const char *file, int line, Types &&... types) {
@@ -76,18 +75,22 @@ inline std::string Exception::dump() {
     if (eptr) {
       std::rethrow_exception(eptr);
     }
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception &e) {
     _dump(s, e);
-  } catch (...) {
+  }
+  catch (...) {
   }
   return s;
 }
 template <class X> inline void Exception::_dump(std::string &s, X &&x) {
   try {
     std::rethrow_if_nested(x);
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception &e) {
     _dump(s, e);
-  } catch (...) {
+  }
+  catch (...) {
   }
 
   if (!s.empty())

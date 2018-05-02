@@ -149,7 +149,7 @@ struct Message {
 // a sequence of labels ending in a zero octet
 // a pointer
 // a sequence of labels ending with a pointer
-template <class StreamType = SocketStream<udp::Socket>> class Compressor {
+template <class StreamType = SocketStream<udp::Socket> > class Compressor {
 public:
   MYSPACE_EXCEPTION_DEFINE(CompressorError, myspace::Exception)
   MYSPACE_EXCEPTION_DEFINE(CompressError, CompressorError)
@@ -199,7 +199,8 @@ public:
         stream_.hold(x.rdata_);
       }
       stream_.flush();
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_THROW_EX(CompressError);
     }
     return *this;
@@ -261,7 +262,8 @@ public:
         dst.additional_.emplace_back(r);
       }
       return dst;
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_THROW_EX(ExtractError);
     }
     return Message{}; // not reached
@@ -396,9 +398,9 @@ inline std::deque<Addr> systemDnsList() {
     auto fi = (FIXED_INFO *)malloc(outbuflen);
     MYSPACE_THROW_IF(!fi);
     MYSPACE_DEFER(if (fi) {
-      free(fi);
-      fi = nullptr;
-    });
+                        free(fi);
+                        fi = nullptr;
+                      });
     auto ret = ::GetNetworkParams(fi, &outbuflen);
     if (ret == ERROR_BUFFER_OVERFLOW) {
       free(fi);
@@ -418,7 +420,8 @@ inline std::deque<Addr> systemDnsList() {
     } else {
       MYSPACE_DEV(Error::strerror(ret));
     }
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_DEV(Exception::dump());
   }
 #endif
@@ -474,7 +477,8 @@ inline std::string dump(const Message &m) {
       ss << "additional.rdata_: " << x.rdata_ << std::endl;
     }
     return ss.str();
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_DEV_EXCEPTION();
   }
   return "";

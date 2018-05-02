@@ -12,17 +12,19 @@ template <class Hold, class Mtx, class Cond, class X>
 class _CriticalImpl : public Hold, public Mtx, public Cond {
 public:
   template <class... Targs>
-  _CriticalImpl(Targs &&... args) : Hold(std::forward<Targs>(args)...) {}
+  _CriticalImpl(Targs &&... args)
+      : Hold(std::forward<Targs>(args)...) {}
 };
 
 template <class Hold, class Mtx, class Cond>
-class _CriticalImpl<
-    Hold, Mtx, Cond,
-    typename std::enable_if<std::is_fundamental<Hold>::value, Hold>::type>
-    : public Mtx, public Cond {
+class _CriticalImpl<Hold, Mtx, Cond,
+                    typename std::enable_if<std::is_fundamental<Hold>::value,
+                                            Hold>::type> : public Mtx,
+                                                           public Cond {
 public:
   template <class... Targs>
-  _CriticalImpl(Targs &&... args) : hold_(std::forward<Targs>(args)...) {}
+  _CriticalImpl(Targs &&... args)
+      : hold_(std::forward<Targs>(args)...) {}
 
 #if defined(MYSPACE_WINDOWS)
   template <class X>

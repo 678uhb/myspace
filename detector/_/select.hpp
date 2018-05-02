@@ -16,13 +16,13 @@ public:
 
   template <class X> void del(X &&x);
 
-  std::map<uint32_t, std::deque<Any>> wait();
+  std::map<uint32_t, std::deque<Any> > wait();
 
-  std::map<uint32_t, std::deque<Any>>
+  std::map<uint32_t, std::deque<Any> >
   wait(std::chrono::high_resolution_clock::duration duration);
 
 private:
-  std::map<uint32_t, std::deque<Any>> wait_tv(timeval *ptv);
+  std::map<uint32_t, std::deque<Any> > wait_tv(timeval *ptv);
 
   std::unordered_map<int, DetectorImpl::Candidate> candidates_;
 
@@ -45,7 +45,7 @@ template <class X> inline bool Select::add(X &&x, DetectType dt) {
 
   SocketOpt::setBlock(fd, false);
 
-  candidates_[fd] = {Any(x), dt};
+  candidates_[fd] = { Any(x), dt };
 
   return true;
 }
@@ -61,7 +61,7 @@ template <class X> inline bool Select::mod(X &&x, DetectType ev) {
 
   SocketOpt::setBlock(fd, false);
 
-  itr->second = DetectorImpl::Candidate{Any(x), ev};
+  itr->second = DetectorImpl::Candidate{ Any(x), ev };
 
   return true;
 }
@@ -75,32 +75,32 @@ template <class X> inline void Select::del(X &&x) {
 
   candidates_.erase(fd);
 }
-inline std::map<uint32_t, std::deque<Any>> Select::wait() {
+inline std::map<uint32_t, std::deque<Any> > Select::wait() {
   return wait_tv(nullptr);
 }
-inline std::map<uint32_t, std::deque<Any>>
+inline std::map<uint32_t, std::deque<Any> >
 Select::wait(std::chrono::high_resolution_clock::duration duration) {
   if (std::chrono::duration_cast<std::chrono::microseconds>(duration).count() <
       0) {
     duration = std::chrono::microseconds(0);
   }
 
-  timeval tv{
-      (long)std::chrono::duration_cast<std::chrono::seconds>(duration).count(),
-      (long)std::chrono::duration_cast<std::chrono::microseconds>(duration)
-              .count() %
-          1000000};
+  timeval tv{(long)std::chrono::duration_cast<std::chrono::seconds>(duration)
+                 .count(),
+             (long)std::chrono::duration_cast<std::chrono::microseconds>(
+                 duration).count() %
+                 1000000 };
 
   return wait_tv(&tv);
 }
-inline std::map<uint32_t, std::deque<Any>> Select::wait_tv(timeval *ptv) {
+inline std::map<uint32_t, std::deque<Any> > Select::wait_tv(timeval *ptv) {
   FD_ZERO(r_.get());
   FD_ZERO(w_.get());
   FD_ZERO(e_.get());
 
   int maxfd = 0;
 
-  std::map<uint32_t, std::deque<Any>> result;
+  std::map<uint32_t, std::deque<Any> > result;
 
   for (auto &p : candidates_) {
     auto &fd = p.first;

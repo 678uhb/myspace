@@ -75,7 +75,7 @@ template <class X, typename std::enable_if<
                        !std::is_same<typename std::decay<X>::type, Any>::value,
                        int>::type>
 inline Any::Any(X &&x) {
-  auto p = new Derived<Any::StorageType<X>>(std::forward<X>(x));
+  auto p = new Derived<Any::StorageType<X> >(std::forward<X>(x));
   ptr_ = p;
 }
 
@@ -124,7 +124,7 @@ template <class X> inline Any::StorageType<X> &Any::as() {
 }
 
 template <class X> inline Any::operator X() {
-  return as<Any::StorageType<X>>();
+  return as<Any::StorageType<X> >();
 }
 
 MYSPACE_END

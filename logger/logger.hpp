@@ -146,7 +146,7 @@ public:
 private:
   LoggerLevel level_ = LoggerLevel::Info;
 
-  std::deque<std::shared_ptr<Sink>> sinks_;
+  std::deque<std::shared_ptr<Sink> > sinks_;
 };
 
 inline Logger &Logger::staticInstance() {

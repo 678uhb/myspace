@@ -200,9 +200,7 @@ inline std::string Socket::recv(
 
     if (n > 0) {
       recvn += n;
-    }
-
-    else if (n == 0)
+    } else if (n == 0)
       break;
 
     else {
@@ -239,9 +237,7 @@ inline std::string Socket::recv(size_t len) noexcept(false) {
 
     if (n > 0) {
       recvn += n;
-    }
-
-    else if (n == 0)
+    } else if (n == 0)
       break;
 
     else {
@@ -316,7 +312,7 @@ inline std::string Socket::recvUntil(
             begin_time = this_time;
        (ret.size() < delm.size() ||
         ret.rfind(delm, ret.size() - delm.size()) == ret.npos) &&
-       this_time - begin_time <= timeout;
+           this_time - begin_time <= timeout;
        this_time = std::chrono::system_clock::now()) {
     auto n = ::recv(sock_, buf.get(), int(recvn), 0);
 

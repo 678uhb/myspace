@@ -56,8 +56,8 @@ public:
   template <class Predicate> X popBack(Predicate pred);
 
   template <class Rep, class Period>
-  X popBackFor(const std::chrono::duration<Rep, Period> &timeout) noexcept(
-      false);
+  X
+  popBackFor(const std::chrono::duration<Rep, Period> &timeout) noexcept(false);
 
   template <class Rep, class Period, class Predicate>
   X popBackFor(const std::chrono::duration<Rep, Period> &timeout,
@@ -231,7 +231,8 @@ inline void Container<X, Cont>::pushBackFor(
 }
 
 template <class X, template <class...> class Cont>
-inline Container<X, Cont>::Container(size_t max_size) : max_size_(max_size) {}
+inline Container<X, Cont>::Container(size_t max_size)
+    : max_size_(max_size) {}
 
 template <class X, template <class...> class Cont>
 inline void Container<X, Cont>::push(bool front, const X &x) {
@@ -266,8 +267,9 @@ inline void Container<X, Cont>::push(bool front, const X &x, Predicate pred) {
 
 template <class X, template <class...> class Cont>
 template <class Rep, class Period>
-void Container<X, Cont>::pushFor(
-    bool front, const X &x, const std::chrono::duration<Rep, Period> &timeout) {
+void
+Container<X, Cont>::pushFor(bool front, const X &x,
+                            const std::chrono::duration<Rep, Period> &timeout) {
   auto begin_time = std::chrono::high_resolution_clock::now();
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_);;) {
     if (cont_.size() < maxSize()) {
@@ -288,9 +290,10 @@ void Container<X, Cont>::pushFor(
 }
 template <class X, template <class...> class Cont>
 template <class Rep, class Period, class Predicate>
-void Container<X, Cont>::pushFor(
-    bool front, const X &x, const std::chrono::duration<Rep, Period> &timeout,
-    Predicate pred) {
+void
+Container<X, Cont>::pushFor(bool front, const X &x,
+                            const std::chrono::duration<Rep, Period> &timeout,
+                            Predicate pred) {
   auto begin_time = std::chrono::high_resolution_clock::now();
   for (auto ul = std::unique_lock<std::recursive_mutex>(mtx_); !pred();) {
     if (cont_.size() < maxSize()) {

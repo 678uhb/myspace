@@ -15,6 +15,6 @@ typedef Fiber
 #elif defined(MYSPACE_LINUX)
 typedef Ucontext
 #endif
-    Coroutine;
+Coroutine;
 
 MYSPACE_END

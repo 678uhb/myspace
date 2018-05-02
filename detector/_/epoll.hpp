@@ -26,13 +26,13 @@ public:
 
   template <class X> void del(X &&x);
 
-  std::map<uint32_t, std::deque<Any>> wait();
+  std::map<uint32_t, std::deque<Any> > wait();
 
-  std::map<uint32_t, std::deque<Any>>
+  std::map<uint32_t, std::deque<Any> >
   wait(std::chrono::high_resolution_clock::duration duration);
 
 private:
-  std::map<uint32_t, std::deque<Any>> wait_ms(int ms);
+  std::map<uint32_t, std::deque<Any> > wait_ms(int ms);
 
   int epoll_ = -1;
 
@@ -61,7 +61,7 @@ template <class X> inline bool Epoll::add(X &&x, DetectType dt) {
   SocketOpt::setBlock(fd, false);
 
   if (0 == ::epoll_ctl(epoll_, EPOLL_CTL_ADD, fd, &ev)) {
-    candidates_[fd] = {Any(x), dt};
+    candidates_[fd] = { Any(x), dt };
 
     return true;
   }
@@ -89,7 +89,7 @@ template <class X> inline bool Epoll::mod(X &&x, DetectType dt) {
   SocketOpt::setBlock(fd, false);
 
   if (0 == ::epoll_ctl(epoll_, EPOLL_CTL_MOD, fd, &ev)) {
-    itr->second = {Any(x), dt};
+    itr->second = { Any(x), dt };
 
     return true;
   }
@@ -111,10 +111,10 @@ template <class X> inline void Epoll::del(X &&x) {
 
   candidates_.erase(fd);
 }
-inline std::map<uint32_t, std::deque<Any>> Epoll::wait() {
+inline std::map<uint32_t, std::deque<Any> > Epoll::wait() {
   return std::move(wait_ms(-1));
 }
-inline std::map<uint32_t, std::deque<Any>>
+inline std::map<uint32_t, std::deque<Any> >
 Epoll::wait(std::chrono::high_resolution_clock::duration duration) {
   auto ms =
       std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
@@ -125,8 +125,8 @@ Epoll::wait(std::chrono::high_resolution_clock::duration duration) {
 
   return std::move(wait_ms(ms));
 }
-inline std::map<uint32_t, std::deque<Any>> Epoll::wait_ms(int ms) {
-  std::map<uint32_t, std::deque<Any>> result;
+inline std::map<uint32_t, std::deque<Any> > Epoll::wait_ms(int ms) {
+  std::map<uint32_t, std::deque<Any> > result;
 
   auto events = newUnique<epoll_event[]>(candidates_.size());
 

@@ -52,10 +52,10 @@ public:
   template <class ReturnType, class SourceType, class X>
   static ReturnType splitOf(const SourceType &, std::initializer_list<X> init);
 
-  template <class ReturnType = std::deque<std::string>>
+  template <class ReturnType = std::deque<std::string> >
   static ReturnType splitOf(const std::string &src, const std::string &delme);
 
-  template <class ReturnType = std::deque<std::string>>
+  template <class ReturnType = std::deque<std::string> >
   static ReturnType splitOf(const std::string &src, const char &delme);
 
   static std::deque<std::string> splitBy(const std::string &src,
@@ -137,8 +137,7 @@ inline std::string Strings::toupper(const std::string &src) {
 inline std::string Strings::rStripOf(const std::string &src,
                                      const std::string &delme) {
   std::string result(src);
-  result.erase(std::find_if(result.rbegin(), result.rend(),
-                            [&delme](char ch) {
+  result.erase(std::find_if(result.rbegin(), result.rend(), [&delme](char ch) {
                               if (delme.empty()) {
                                 return !isBlank(ch);
                               } else {
@@ -146,8 +145,7 @@ inline std::string Strings::rStripOf(const std::string &src,
                                     delme.begin(), delme.end(),
                                     [&ch](char d) { return d == ch; });
                               }
-                            })
-                   .base(),
+                            }).base(),
                result.end());
   return result;
 }
@@ -157,11 +155,11 @@ template <class ToString,
               std::is_constructible<std::string, ToString>::value, int>::type>
 inline std::string Strings::rStripOf(const std::string &src,
                                      const ToString &delme) {
-  return Strings::rStripOf(src, std::string{delme});
+  return Strings::rStripOf(src, std::string{ delme });
 }
 
 inline std::string Strings::rStripOf(const std::string &src, char delme) {
-  return Strings::rStripOf(src, std::string{delme});
+  return Strings::rStripOf(src, std::string{ delme });
 }
 
 inline std::string Strings::lStripOf(const std::string &src,
@@ -183,11 +181,11 @@ template <class ToString,
               std::is_constructible<std::string, ToString>::value, int>::type>
 inline std::string Strings::lStripOf(const std::string &src,
                                      const ToString &delme) {
-  return lStripOf(src, std::string{delme});
+  return lStripOf(src, std::string{ delme });
 }
 
 inline std::string Strings::lStripOf(const std::string &src, char delme) {
-  return lStripOf(src, std::string{delme});
+  return lStripOf(src, std::string{ delme });
 }
 
 template <class ToString,
@@ -195,11 +193,11 @@ template <class ToString,
               std::is_constructible<std::string, ToString>::value, int>::type>
 inline std::string Strings::stripOf(const std::string &src,
                                     const ToString &delme) {
-  return stripOf(src, std::string{delme});
+  return stripOf(src, std::string{ delme });
 }
 
 inline std::string Strings::stripOf(const std::string &src, char delme) {
-  return stripOf(src, std::string{delme});
+  return stripOf(src, std::string{ delme });
 }
 
 inline std::string Strings::stripOf(const std::string &src,
@@ -246,7 +244,8 @@ inline ReturnType Strings::splitOf(const std::string &src,
 
 template <class ReturnType>
 inline ReturnType Strings::splitOf(const std::string &src, const char &delme) {
-  return splitOf<ReturnType, std::string, std::string>(src, std::string{delme});
+  return splitOf<ReturnType, std::string, std::string>(src,
+                                                       std::string{ delme });
 }
 
 template <class Iteraterable>
@@ -267,7 +266,7 @@ inline std::string Strings::join(const Iteraterable &x,
 
 template <class Iteraterable>
 inline std::string Strings::join(const Iteraterable &x, char join_token) {
-  return Strings::join<Iteraterable>(x, std::string{join_token});
+  return Strings::join<Iteraterable>(x, std::string{ join_token });
 }
 inline bool Strings::startWithin(const std::string &str,
                                  const std::string &token) {

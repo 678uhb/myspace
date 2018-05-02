@@ -134,7 +134,8 @@ inline void CALLBACK Fiber::proc(_In_ PVOID lpParameter) {
     if (f->func_) {
       (f->func_)(*f);
     }
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_ERROR(Exception::dump());
   }
 

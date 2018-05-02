@@ -38,7 +38,8 @@ inline Response Client::get(
     std::chrono::high_resolution_clock::duration timeout) noexcept(false) {
   try {
     return httpMethod(Method::GET, req, timeout);
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_THROW_EX(ClientError);
   }
   return Response{}; // not reached
@@ -54,7 +55,7 @@ Client::httpMethod(Method method, const Request &t_req,
   }
   auto addrs = dns::Resolver().query(domain);
   MYSPACE_THROW_IF(addrs.empty());
-  SocketStream<tcp::Socket> ss{addrs.front(), timeout};
+  SocketStream<tcp::Socket> ss{ addrs.front(), timeout };
 
   {
     req.header()["host"] = req.uri().domain();

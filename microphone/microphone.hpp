@@ -36,13 +36,13 @@ private:
   bool buffer_ready_ = false;
   bool stop_ = false;
   std::thread prepare_buffer_thread_;
-  WAVEFORMATEX format_ = {0};
+  WAVEFORMATEX format_ = { 0 };
   size_t voicelength_ = 0;
   std::function<void(std::string &&voice)> callback_;
   std::mutex mtx_;
   std::condition_variable cond_;
   HWAVEIN wave_in_ = 0;
-  std::deque<std::unique_ptr<WAVEHDR>> buffers_;
+  std::deque<std::unique_ptr<WAVEHDR> > buffers_;
 };
 
 inline void Microphone::prepareBufferProc(size_t no) {
@@ -59,7 +59,7 @@ inline void Microphone::prepareBufferProc(size_t no) {
         std::max((size_t)3, (size_t)format_.nAvgBytesPerSec / voicelength_);
 
     for (size_t i = 0; i < buff_count; ++i) {
-      auto buff = std::make_unique<WAVEHDR>(WAVEHDR{0});
+      auto buff = std::make_unique<WAVEHDR>(WAVEHDR{ 0 });
 
       buff->lpData = (LPSTR)::malloc(voicelength_);
       MYSPACE_THROW_IF_EX(MicError, !buff->lpData);
@@ -67,7 +67,7 @@ inline void Microphone::prepareBufferProc(size_t no) {
       buff->dwBytesRecorded = 0;
       buff->dwFlags = 0;
       buff->dwLoops = 0;
-      buff->dwUser = (DWORD_PTR)this;
+      buff->dwUser = (DWORD_PTR) this;
       buff->lpNext = 0;
 
       MYSPACE_THROW_IF_EX(
@@ -99,7 +99,8 @@ inline void Microphone::prepareBufferProc(size_t no) {
         if (buffer->dwFlags & WHDR_DONE) {
           try {
             callback_(std::string(buffer->lpData, buffer->dwBytesRecorded));
-          } catch (...) {
+          }
+          catch (...) {
             MYSPACE_DEV_EXCEPTION();
           }
 
@@ -115,7 +116,8 @@ inline void Microphone::prepareBufferProc(size_t no) {
         }
       }
     }
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_DEV_EXCEPTION();
   }
 
@@ -152,10 +154,9 @@ inline Microphone::~Microphone() {
     prepare_buffer_thread_.join();
 }
 
-inline void CALLBACK Microphone::callbackFunc(HWAVEIN hwavein, UINT uMsg,
-                                              DWORD_PTR dwInstance,
-                                              DWORD_PTR dwParam1,
-                                              DWORD_PTR dwParam2) {
+inline void CALLBACK
+Microphone::callbackFunc(HWAVEIN hwavein, UINT uMsg, DWORD_PTR dwInstance,
+                         DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
   auto header = (LPWAVEHDR)dwParam1;
   auto mic = (header ? (Microphone *)header->dwUser : nullptr);
   if (!mic || !header)

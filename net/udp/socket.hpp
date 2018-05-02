@@ -175,9 +175,7 @@ Socket::recv(std::chrono::high_resolution_clock::duration timeout) {
     if (n > 0) {
       data.append(buf.get(), n);
       break;
-    }
-
-    else if (n == 0)
+    } else if (n == 0)
       break;
 
     else {
@@ -226,7 +224,7 @@ Socket::recvfrom(Addr &dst,
 
   SocketOpt::setBlock(sock_, false);
 
-  sockaddr_in addr = {0};
+  sockaddr_in addr = { 0 };
   addr.sin_family = AF_INET;
   MYSPACE_DEFER(dst = addr;);
   socklen_t addrlen = sizeof(addr);
@@ -243,9 +241,7 @@ Socket::recvfrom(Addr &dst,
       data.append(buf.get(), n);
       MYSPACE_DEV("buf[0] %s, buf[1]", (int)buf[0], (int)buf[1]);
       break;
-    }
-
-    else if (n == 0)
+    } else if (n == 0)
       break;
 
     else {

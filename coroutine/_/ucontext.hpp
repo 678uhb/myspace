@@ -127,7 +127,8 @@ inline void Ucontext::proc(void *arg) {
     if (caller && caller->func_) {
       (caller->func_)(*caller);
     }
-  } catch (...) {
+  }
+  catch (...) {
   }
 
   caller->callee_is_quit_ = true;

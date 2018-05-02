@@ -140,7 +140,7 @@ inline void Socketbase::bind(const Addr &addr) {
 }
 
 inline void Socketbase::bind(uint16_t port) {
-  Addr addr{"0.0.0.0", port};
+  Addr addr{ "0.0.0.0", port };
   this->bind(addr);
 }
 

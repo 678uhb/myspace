@@ -28,14 +28,14 @@ struct Format {
 #pragma pack(1)
 struct Head {
   Head(const wav::Format &fmt) : format_(fmt) {}
-  char riff_[4] = {'R', 'I', 'F', 'F'};
+  char riff_[4] = { 'R', 'I', 'F', 'F' };
   uint32_t riff_size_ = sizeof(wav::Head) - 8;
-  char wave_[4] = {'W', 'A', 'V', 'E'};
-  char fmt_[4] = {'f', 'm', 't', ' '};
+  char wave_[4] = { 'W', 'A', 'V', 'E' };
+  char fmt_[4] = { 'f', 'm', 't', ' ' };
   uint32_t fmt_size_ = 18;
   wav::Format format_;
   uint16_t ext_ = 0;
-  char data_[4] = {'d', 'a', 't', 'a'};
+  char data_[4] = { 'd', 'a', 't', 'a' };
   uint32_t data_size_ = 0;
 };
 #pragma pack(pop)

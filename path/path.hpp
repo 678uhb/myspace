@@ -117,10 +117,10 @@ inline std::deque<std::string> Path::splitext(const std::string &path) {
   auto pos = path.find_last_of('.');
 
   if (pos == path.npos) {
-    return {path, ""};
+    return { path, "" };
   }
 
-  return {path.substr(0, pos), path.substr(pos + 1)};
+  return { path.substr(0, pos), path.substr(pos + 1) };
 }
 
 inline std::string Path::dirname(const std::string &path) {

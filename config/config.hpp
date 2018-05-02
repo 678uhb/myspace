@@ -20,8 +20,8 @@ public:
   X get(const std::string &section, const std::string &key) const;
 
 private:
-  std::unordered_map<std::string, std::unordered_map<std::string, std::string>>
-      dict_;
+  std::unordered_map<std::string, std::unordered_map<std::string, std::string> >
+  dict_;
 };
 
 inline Config::Config(const std::string &path) {

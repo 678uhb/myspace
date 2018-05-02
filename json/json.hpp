@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "myspace/_/stdafx.hpp"
@@ -18,13 +16,21 @@ public:
   MYSPACE_EXCEPTION_DEFINE(TypeError, Json::Exception)
 
 public:
-  enum Type { STR, OBJ, NUM, NUL, ARR, BOL };
+  enum Type {
+    STR,
+    OBJ,
+    NUM,
+    NUL,
+    ARR,
+    BOL
+  };
 
   typedef std::map<std::string, Json> Object;
   typedef std::deque<Json> Array;
 
 public:
-  static Json parse(const std::string &src) noexcept(false);
+  template <class SourceType>
+  static Json parse(const SourceType &src) noexcept(false);
   // Implicit constructor: map-like objects (std::map, std::unordered_map,
   // etc)
   template <
@@ -35,8 +41,9 @@ public:
               std::is_constructible<
                   Json, decltype(std::declval<M>().begin()->second)>::value,
           int>::type = 0>
-  Json(const M &m) : Json(Object(m.begin(), m.end())) {}
-  Json(std::initializer_list<std::pair<std::string, Json>> init);
+  Json(const M &m)
+      : Json(Object(m.begin(), m.end())) {}
+  Json(std::initializer_list<std::pair<std::string, Json> > init);
 
   // Implicit constructor: vector-like objects (std::list, std::vector,
   // std::set, etc)
@@ -44,7 +51,8 @@ public:
                          std::is_constructible<
                              Json, decltype(*std::declval<V>().begin())>::value,
                          int>::type = 0>
-  Json(const V &v) : Json(Array(v.begin(), v.end())) {}
+  Json(const V &v)
+      : Json(Array(v.begin(), v.end())) {}
   Json();
   Json(const Array &);
   Json(Array &&);
@@ -298,7 +306,9 @@ public:
   JsonArray(Json::Array &&x) : Value(std::move(x)) {}
   Json::Type type() const override { return Json::ARR; }
   bool isArray() const override { return true; }
-  Json::Array &arrayValue() override { return value_; };
+  Json::Array &arrayValue() override {
+    return value_;
+  };
   Json &operator[](size_t idx) noexcept(false) override {
     if (idx < value_.size())
       return value_[idx];
@@ -329,8 +339,10 @@ public:
   JsonObject(Json::Object &&x) : Value(std::move(x)) {}
   Json::Type type() const override { return Json::OBJ; }
   bool isObject() const override { return true; }
-  Json::Object &objectValue() override { return value_; };
-  Json &operator[](const std::string &key) override { return value_[key]; }
+  Json::Object &objectValue() override {
+    return value_;
+  };
+  Json &operator[](const std::string &key)override { return value_[key]; }
   std::string dump() const override {
     std::stringstream ss;
     ss << '{';
@@ -351,15 +363,18 @@ public:
   friend class myspace::Json;
 };
 
-class JsonParser {
+template <class SourceType> class JsonParser {
 public:
   MYSPACE_EXCEPTION_DEFINE(Exception, myspace::Exception)
 public:
-  JsonParser(const std::string &src) : src_(src){};
+  JsonParser(const SourceType &src) : src_(src) {
+    itr_ = std::begin(src_);
+  };
   Json parse() noexcept(false) {
     try {
       return onValue(peek());
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return Json{};
@@ -417,7 +432,8 @@ private:
           arr.emplace_back(onValue(c));
         }
       }
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return Json{};
@@ -433,7 +449,7 @@ private:
         auto c = peek();
         if (c == '}') {
           get();
-          return Json{obj};
+          return Json{ obj };
         } else if (!nameready) {
           assert_peek('\"');
           name = onString();
@@ -449,7 +465,8 @@ private:
           }
         }
       }
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return Json{};
@@ -480,7 +497,8 @@ private:
         }
       }
       return result;
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return std::string{};
@@ -508,7 +526,8 @@ private:
       double x;
       result >> x;
       return x;
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return 0;
@@ -530,7 +549,8 @@ private:
           return false;
       }
       MYSPACE_THROW(" expect true/false");
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return false;
@@ -546,7 +566,8 @@ private:
       x = Strings::tolower(x);
       MYSPACE_THROW_IF(x != "null");
       return Json();
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_DEV_RETHROW_EX(JsonParser::Exception);
     }
     return Json{};
@@ -563,8 +584,8 @@ private:
                         "\', get = \'", g, "\'");
   }
   void skipWhite() {
-    for (; !src_.empty(); src_.erase(0, 1)) {
-      if (std::iscntrl(src_[0]) || std::isblank(src_[0]))
+    for (; itr_ != std::end(src_); ++itr_) {
+      if (std::iscntrl(*itr_) || std::isblank(*itr_))
         continue;
       break;
     }
@@ -572,23 +593,23 @@ private:
   char get(bool skipwhite = true) {
     if (skipwhite)
       skipWhite();
-    MYSPACE_THROW_IF_EX(JsonParser::Exception, src_.empty());
-    MYSPACE_DEFER(src_.erase(0, 1));
-    return src_[0];
+    MYSPACE_THROW_IF_EX(JsonParser::Exception, itr_ == std::end(src_));
+    return *itr_++;
   }
   char peek(bool skipwhite = true) {
     if (skipwhite)
       skipWhite();
-    MYSPACE_THROW_IF_EX(JsonParser::Exception, src_.empty());
-    return src_[0];
+    MYSPACE_THROW_IF_EX(JsonParser::Exception, itr_ == std::end(src_));
+    return *itr_;
   }
 
-  std::string src_;
+  const SourceType &src_;
+  typename SourceType::const_iterator itr_;
 }; // namespace jsonimpl
 
 } // namespace jsonimpl
 inline void Json::clear() { *this = Json(); }
-inline Json::Json(std::initializer_list<std::pair<std::string, Json>> init)
+inline Json::Json(std::initializer_list<std::pair<std::string, Json> > init)
     : Json(Json::Object(init.begin(), init.end())) {}
 inline Json::Json() : value_(newShared<jsonimpl::JsonNull>()) {}
 inline Json::Json(Json &&x) { swap(x); }
@@ -605,7 +626,8 @@ inline Json::Json(const std::string &x)
     : value_(newShared<jsonimpl::JsonString>(x)) {}
 inline Json::Json(std::string &&x)
     : value_(newShared<jsonimpl::JsonString>(std::move(x))) {}
-inline Json::Json(const char *x) : value_(newShared<jsonimpl::JsonString>(x)){};
+inline Json::Json(const char *x)
+    : value_(newShared<jsonimpl::JsonString>(x)) {};
 inline Json::Json(double x) : value_(newShared<jsonimpl::JsonNumber>(x)) {}
 inline Json::Json(float x) : Json((double)x) {}
 inline Json::Json(int32_t x) : Json((double)x) {}
@@ -644,7 +666,8 @@ inline Json &Json::operator=(Json &&x) {
 inline std::string Json::dump() const {
   try {
     return value_->dump();
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_DEV_EXCEPTION();
   }
   return std::string{};
@@ -656,7 +679,8 @@ inline std::string Json::to_json() const { return dump(); }
 inline Json &Json::operator[](const std::string &key) {
   try {
     return value_->operator[](key);
-  } catch (...) {
+  }
+  catch (...) {
     value_ = newShared<jsonimpl::JsonObject>(Json::Object{});
     return value_->operator[](key);
   }
@@ -756,28 +780,30 @@ inline bool Json::operator>=(const Json &x) const {
   return value_->operator>=(x.value_.get());
 }
 template <class X> inline bool Json::operator==(const X &x) const {
-  return operator==(Json{x});
+  return operator==(Json{ x });
 }
 template <class X> inline bool Json::operator!=(const X &x) const {
-  return operator!=(Json{x});
+  return operator!=(Json{ x });
 }
 template <class X> inline bool Json::operator<(const X &x) const {
-  return operator<(Json{x});
+  return operator<(Json{ x });
 }
 template <class X> inline bool Json::operator<=(const X &x) const {
-  return operator<=(Json{x});
+  return operator<=(Json{ x });
 }
 template <class X> inline bool Json::operator>(const X &x) const {
-  return operator>(Json{x});
+  return operator>(Json{ x });
 }
 template <class X> inline bool Json::operator>=(const X &x) const {
-  return operator>=(Json{x});
+  return operator>=(Json{ x });
 }
 
-inline Json Json::parse(const std::string &src) noexcept(false) {
+template <class SourceType>
+inline Json Json::parse(const SourceType &src) noexcept(false) {
   try {
-    return jsonimpl::JsonParser(src).parse();
-  } catch (...) {
+    return jsonimpl::JsonParser<SourceType>(src).parse();
+  }
+  catch (...) {
     MYSPACE_DEV_RETHROW_EX(Json::ParseError)
   }
   return Json{}; // not reached

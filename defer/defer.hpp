@@ -7,7 +7,8 @@
 #include "myspace/logger/logger.hpp"
 MYSPACE_BEGIN
 
-#define MYSPACE_DEFER(f) MYSPACE_ANNOYMOUS(myspace::Defer)([&]() { f; })
+#define MYSPACE_DEFER(f)                                                       \
+  MYSPACE_ANNOYMOUS(myspace::Defer)([&]() { f; })
 
 class Defer {
 public:
@@ -31,7 +32,8 @@ inline Defer::~Defer() {
   if (defered_) {
     try {
       defered_();
-    } catch (...) {
+    }
+    catch (...) {
       MYSPACE_DEV_EXCEPTION();
     };
   }

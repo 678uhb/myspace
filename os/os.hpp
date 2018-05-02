@@ -57,7 +57,8 @@ OS::status(const std::string &t_path) noexcept(false) {
 inline bool OS::isdir(const std::string path) {
   try {
     return (OS::status(path)->st_mode & S_IFDIR) == S_IFDIR;
-  } catch (...) {
+  }
+  catch (...) {
   }
   return false;
 }
@@ -65,7 +66,8 @@ inline bool OS::isdir(const std::string path) {
 inline bool OS::isfile(const std::string path) {
   try {
     return (OS::status(path)->st_mode & S_IFREG) == S_IFREG;
-  } catch (...) {
+  }
+  catch (...) {
   }
   return false;
 }
@@ -88,7 +90,8 @@ inline void OS::makedirs(std::deque<std::string> &left,
     left.emplace_back(move(right.front()));
     right.pop_front();
     OS::makedirs(left, right);
-  } catch (...) {
+  }
+  catch (...) {
     auto e = Error::lastError();
     if (e == std::errc::no_such_file_or_directory) {
       MYSPACE_THROW_IF_EX(OSError, left.empty());

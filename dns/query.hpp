@@ -34,8 +34,8 @@ inline std::deque<Addr> Resolver::query(
     auto serveraddr = dnsimpl::systemDnsList();
     MYSPACE_THROW_IF(serveraddr.empty());
     return query(serveraddr.front(), domain_name, timeout);
-
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_THROW_EX(Resolver::NotFound);
   }
   return std::deque<Addr>{}; // not reached;
@@ -57,9 +57,10 @@ inline std::deque<Addr> Resolver::query(
       req.question_.emplace_back(q);
     }
 
-    auto resp = dnsimpl::Compressor<SocketStream<udp::Socket>>{server, timeout}
-                    .compress(req)
-                    .extract();
+    auto resp = dnsimpl::Compressor<SocketStream<udp::Socket> > {
+      server, timeout
+    }
+    .compress(req).extract();
 
     MYSPACE_DEV(dnsimpl::dump(resp));
     for (auto &x : resp.answer_) {
@@ -72,8 +73,8 @@ inline std::deque<Addr> Resolver::query(
       }
     }
     return result;
-
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_THROW_EX(Resolver::NotFound);
   }
   return std::deque<Addr>{}; // not reached;

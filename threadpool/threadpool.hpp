@@ -32,7 +32,7 @@ private:
 
   bool stop_ = false;
 
-  Critical<std::list<std::function<void()>>> jobs_;
+  Critical<std::list<std::function<void()> > > jobs_;
 
   std::deque<std::thread> threads_;
 };
@@ -72,7 +72,7 @@ template <class Function, class... Arguments>
 inline auto ThreadPool::push(bool putfront, Function &&f, Arguments &&... args)
     -> std::future<typename std::result_of<Function(Arguments...)>::type> {
   using return_t = typename std::result_of<Function(Arguments...)>::type;
-  auto job = newShared<std::packaged_task<return_t()>>(
+  auto job = newShared<std::packaged_task<return_t()> >(
       std::bind(std::forward<Function>(f), std::forward<Arguments>(args)...));
   auto ret = job->get_future();
   MYSPACE_IF_LOCK(jobs_) {
@@ -103,7 +103,8 @@ inline void ThreadPool::workerProc() {
     if (job) {
       try {
         job();
-      } catch (...) {
+      }
+      catch (...) {
         MYSPACE_WARN_EXCEPTION();
       }
     }

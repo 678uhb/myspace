@@ -294,7 +294,8 @@ inline size_t SocketStream<SockType>::holdSize() const {
 template <class SockType> inline SocketStream<SockType>::~SocketStream() {
   try {
     flush();
-  } catch (...) {
+  }
+  catch (...) {
     MYSPACE_DEV_EXCEPTION();
   }
 }

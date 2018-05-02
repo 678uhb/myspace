@@ -14,6 +14,6 @@ typedef Epoll
 #else
 typedef Select
 #endif
-    Detector;
+Detector;
 
 MYSPACE_END
