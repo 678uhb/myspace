@@ -30,6 +30,7 @@
 #include "myspace/strings/strings.hpp"
 #include "myspace/threadpool/threadpool.hpp"
 #include "myspace/uuid/uuid.hpp"
+#include "myspace/vad/energyvad.hpp"
 #include "myspace/wav/file.hpp"
 #include "myspace/wav/tool.hpp"
 #include "myspace/wav/wav.hpp"

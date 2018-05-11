@@ -94,7 +94,7 @@ inline std::string Codec::convertUtf8ToGbk(const std::string &src) {
 
 inline std::string Codec::encodeBase64(const std::string &src) {
   std::string result;
-  uint8_t a3[3] = { 0 }, a4[4] = { 0 };
+  uint8_t a3[3] = {0}, a4[4] = {0};
   size_t i = 0;
   result.reserve(EncodedLength(src.size()));
   for (auto c : src) {
@@ -122,7 +122,7 @@ inline std::string Codec::encodeBase64(const std::string &src) {
 inline std::string Codec::decodeBase64(const std::string &src) {
   std::string result;
   size_t i = 0;
-  uint8_t a3[3] = { 0 }, a4[4] = { 0 };
+  uint8_t a3[3] = {0}, a4[4] = {0};
   for (auto c : src) {
     if (c == '=') {
       break;
@@ -172,12 +172,13 @@ inline void Codec::a4_to_a3(uint8_t *a4, uint8_t *a3) {
 #if defined(MYSPACE_WINDOWS)
 
 inline std::wstring toWideChar(uint32_t codepage, const std::string &src) {
+  int32_t src_len = (int32_t)std::min(src.size(), (size_t)INT32_MIN);
   auto dstlen =
-      ::MultiByteToWideChar(codepage, 0, src.c_str(), src.size(), nullptr, 0);
+      ::MultiByteToWideChar(codepage, 0, src.c_str(), src_len, nullptr, 0);
   if (dstlen <= 0)
     return std::wstring();
   auto dstbuffer = newUnique<wchar_t[]>(dstlen);
-  auto n = ::MultiByteToWideChar(codepage, 0, src.c_str(), src.size(),
+  auto n = ::MultiByteToWideChar(codepage, 0, src.c_str(), src_len,
                                  dstbuffer.get(), dstlen);
   if (n <= 0)
     return std::wstring();
@@ -185,12 +186,13 @@ inline std::wstring toWideChar(uint32_t codepage, const std::string &src) {
 }
 
 inline std::string toMultiByte(uint32_t codepage, const std::wstring &src) {
-  auto dstlen = ::WideCharToMultiByte(codepage, 0, src.c_str(), src.size(),
+  int32_t src_len = (int32_t)std::min(src.size(), (size_t)INT32_MIN);
+  auto dstlen = ::WideCharToMultiByte(codepage, 0, src.c_str(), src_len,
                                       nullptr, 0, nullptr, nullptr);
   if (dstlen <= 0)
     return std::string();
   auto dstbuffer = newUnique<char[]>(dstlen);
-  auto n = ::WideCharToMultiByte(codepage, 0, src.c_str(), src.size(),
+  auto n = ::WideCharToMultiByte(codepage, 0, src.c_str(), src_len,
                                  dstbuffer.get(), dstlen, nullptr, nullptr);
   if (n <= 0)
     return std::string();

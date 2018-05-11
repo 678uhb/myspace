@@ -52,9 +52,7 @@ inline File::~File() {
 inline File &File::append(const char *voice, size_t length) {
   if (voice && length > 0) {
     addSize(length);
-
     resetHead();
-
     std::ofstream(filename_.c_str(),
                   std::ios::out | std::ios::binary | std::ios::app)
         .write(voice, length)
@@ -69,20 +67,15 @@ inline void File::close() { resetHead(); }
 inline File &File::resetHead() {
   std::fstream fs(filename_, std::ios::in | std::ios::out | std::ios::binary |
                                  std::ios::ate);
-
   if (fs.is_open()) {
     fs.seekp(0);
-
     fs.write((char *)&head_, sizeof(head_)).flush();
   }
-
   return *this;
 }
 inline File &File::addSize(size_t n) {
-  head_.riff_size_ += n;
-
-  head_.data_size_ += n;
-
+  head_.riff_size_ += (uint32_t)n;
+  head_.data_size_ += (uint32_t)n;
   return *this;
 }
 } // namespace wav
